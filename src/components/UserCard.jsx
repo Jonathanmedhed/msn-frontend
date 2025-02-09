@@ -1,128 +1,207 @@
-import React from "react";
-import { Box, Typography, IconButton, Avatar } from "@mui/material";
-import { ArrowDropDown, Edit } from "@mui/icons-material";
+import {
+  Box,
+  Typography,
+  Avatar,
+  IconButton,
+  Badge,
+  Menu,
+  MenuItem,
+} from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import BlockIcon from "@mui/icons-material/Block"; // Import the Block icon
+import PropTypes from "prop-types";
+import { useState } from "react";
 
-// Status colors
-const statusColors = {
-  Online: "#4caf50", // Green
-  Away: "#ffeb3b", // Yellow
-  Busy: "#ff9800", // Orange
-  Offline: "#f44336", // Red
-  Blocked: "#9e9e9e", // Gray
-};
-
-function UserCard({
+export const UserCard = ({
   user,
-  showArrow = false,
+  size = "large",
   showEditIcon = false,
-  alwaysShowPersonalMessage = false,
-  size = "medium", // 'medium' or 'small'
-  onArrowClick,
   onEditClick,
-}) {
-  const { name, status, avatar, personalMessage } = user;
-
-  // Avatar size based on the `size` prop
-  const avatarSize = size === "small" ? 40 : 56;
-
-  // Status indicator size based on the `size` prop
-  const statusIndicatorSize = size === "small" ? 12 : 14;
-
-  // Render status circle or slash icon
-  const renderStatusIndicator = (status) => {
-    if (status === "Blocked") {
-      return (
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 0,
-            right: 0,
-            backgroundColor: statusColors[status],
-            borderRadius: "50%",
-            width: statusIndicatorSize + 6, // Slightly larger for the slash icon
-            height: statusIndicatorSize + 6,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Box
-            sx={{
-              width: "100%",
-              height: "2px",
-              backgroundColor: "#fff",
-              transform: "rotate(-45deg)",
-            }}
-          />
-        </Box>
-      );
-    } else {
-      return (
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 0,
-            right: 0,
-            backgroundColor: statusColors[status],
-            borderRadius: "50%",
-            width: statusIndicatorSize,
-            height: statusIndicatorSize,
-            border: "2px solid #fff",
-          }}
-        />
-      );
+  alwaysShowPersonalMessage = false,
+  largeStatus = false,
+  avatarSizeMultiplier = 1, // New prop to control avatar size
+  isLoggedInUser = false,
+  onStatusChange,
+}) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "online":
+        return "green";
+      case "offline":
+        return "red";
+      case "busy":
+        return "orange";
+      default:
+        return "gray";
     }
   };
 
-  return (
-    <Box sx={{ display: "flex", alignItems: "center" }}>
-      {/* Avatar and Status Indicator */}
-      <Box sx={{ position: "relative" }}>
-        <Avatar src={avatar} sx={{ width: avatarSize, height: avatarSize }} />
-        {renderStatusIndicator(status)}
-      </Box>
+  const [anchorEl, setAnchorEl] = useState(null); // For the status menu
+  // Handle closing the status menu
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
-      {/* User Info */}
-      <Box sx={{ ml: 2, flexGrow: 1 }}>
-        <Typography variant={size === "small" ? "subtitle1" : "h6"}>
-          {name}{" "}
-          <Typography
-            component="span"
-            variant="body2"
-            color="textSecondary"
-            sx={{ opacity: 0.7 }}
-          >
-            ({status})
-          </Typography>
-          {/* Dropdown Arrow */}
-          {showArrow && (
-            <IconButton
-              onClick={onArrowClick}
+  // Handle status change
+  const handleStatusSelect = (status) => {
+    onStatusChange(status); // Call the parent function to update the status
+    handleMenuClose();
+  };
+
+  const isBlocked = user.status === "blocked";
+  const baseAvatarSize = size === "lg" ? 100 : size === "md" ? 70 : 60; // Base size for the avatar
+  const avatarSize = baseAvatarSize * avatarSizeMultiplier; // Apply multiplier
+
+  // Handle opening the status menu
+  const handleAvatarClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  return (
+    <Box
+      sx={{ display: "flex", alignItems: "center", width: "100%", padding: 1 }}
+    >
+      {/* Avatar with Status Indicator */}
+      <Badge
+        overlap="circular"
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        variant="dot"
+        sx={{
+          "& .MuiBadge-badge": {
+            backgroundColor: getStatusColor(user.status),
+            color: getStatusColor(user.status),
+            boxShadow: `0 0 0 2px white`,
+            width: largeStatus ? 16 : 12, // Adjust status circle size
+            height: largeStatus ? 16 : 12, // Adjust status circle size
+            borderRadius: "50%",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: "relative",
+            width: avatarSize,
+            height: avatarSize,
+          }}
+        >
+          {/* Avatar with Status Indicator */}
+          <IconButton onClick={handleAvatarClick}>
+            <Avatar
+              alt={user.name}
+              src={user.profilePicture}
               sx={{
-                padding: 0, // Remove padding
-                color: "black", // Set the icon color
+                width: "100%",
+                height: "100%",
+                opacity: isBlocked ? 0.5 : 1, // Reduce opacity if blocked
+              }}
+            />
+          </IconButton>
+          {/* Blocked Icon */}
+
+          {isBlocked && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 1, // Ensure the icon is in front of the avatar
               }}
             >
-              <ArrowDropDown />
-            </IconButton>
+              <BlockIcon
+                onClick={handleAvatarClick}
+                sx={{
+                  fontSize: avatarSize, // Match the avatar size
+                  color: "red", // Red color for the blocked icon
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            </Box>
           )}
-        </Typography>
-        {/* Personal Message */}
-        {(alwaysShowPersonalMessage || personalMessage) && (
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography
-              variant="body2"
-              color="textSecondary"
-              sx={{ opacity: 0.7 }}
+          {/* Status Menu */}
+          {isLoggedInUser ? (
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
             >
-              {personalMessage || "<Enter personal message>"}
+              {["Online", "Away", "Busy", "Offline"].map((status) => (
+                <MenuItem
+                  key={status}
+                  onClick={() => handleStatusSelect(status)}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius: "50%",
+                        backgroundColor:
+                          status === "Online"
+                            ? "green"
+                            : status === "Away"
+                            ? "orange"
+                            : status === "Busy"
+                            ? "red"
+                            : "gray",
+                      }}
+                    />
+                    <Typography>{status}</Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Menu>
+          ) : (
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
+            >
+              {[isBlocked ? "Unblock" : "Block"].map((status) => (
+                <MenuItem
+                  key={status}
+                  onClick={() => handleStatusSelect(status)}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography>{status}</Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Menu>
+          )}
+        </Box>
+      </Badge>
+
+      {/* User Info */}
+      <Box sx={{ flexGrow: 1, ml: 2 }}>
+        <Typography variant="h6">{user.name}</Typography>
+        {!alwaysShowPersonalMessage && (
+          <Typography variant="body2" color="textSecondary">
+            {user.status}
+          </Typography>
+        )}
+
+        {/* Always show personal message */}
+        {alwaysShowPersonalMessage && (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+              {user.customMessage}
             </Typography>
             {showEditIcon && (
               <IconButton
                 onClick={onEditClick}
-                sx={{ padding: 0, marginLeft: 0.5 }}
+                sx={{
+                  fontSize: "inherit", // Match the font size of the Typography
+                  padding: 0, // Remove padding to align better with text
+                  marginLeft: 1, // Add some spacing between text and icon
+                }}
               >
-                <Edit sx={{ fontSize: 16, color: "black" }} />
+                <EditIcon fontSize="inherit" />
               </IconButton>
             )}
           </Box>
@@ -130,6 +209,24 @@ function UserCard({
       </Box>
     </Box>
   );
-}
+};
 
-export default UserCard;
+UserCard.propTypes = {
+  user: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    profilePicture: PropTypes.string.isRequired,
+    status: PropTypes.oneOf(["online", "offline", "busy", "blocked"])
+      .isRequired,
+    customMessage: PropTypes.string,
+  }).isRequired,
+  size: PropTypes.oneOf(["lg", "md"]),
+  showArrow: PropTypes.bool,
+  showEditIcon: PropTypes.bool,
+  onArrowClick: PropTypes.func,
+  onEditClick: PropTypes.func,
+  alwaysShowPersonalMessage: PropTypes.bool,
+  largeStatus: PropTypes.bool, // New prop for larger status circle
+  avatarSizeMultiplier: PropTypes.number, // New prop for avatar size multiplier
+  onStatusChange: PropTypes.func,
+  isLoggedInUser: PropTypes.bool,
+};
