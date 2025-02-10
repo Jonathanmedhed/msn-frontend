@@ -1,66 +1,163 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Box, TextField, IconButton, Menu, MenuItem } from "@mui/material";
 import PropTypes from "prop-types";
-import { UserCard } from "./UserCard"; // Assuming UserCard is used for contacts
-import { Message } from "./Message"; // Import the Message component
+import { UserCard } from "./UserCard";
+import { Message } from "./Message";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import ImageIcon from "@mui/icons-material/Image";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
-import SendIcon from "@mui/icons-material/Send"; // Import Send icon
+import SendIcon from "@mui/icons-material/Send";
 import EmojiPicker from "emoji-picker-react";
-import "../css/emoji-picker-custom.css";
+import { io } from "socket.io-client";
+import { sendMessage, fetchChatMessages, createChat } from "../api";
 
 export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null); // For the block menu
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [isSending, setIsSending] = useState(false);
+  const socketRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const currentUserId = localStorage.getItem("userId");
 
-  // Mock messages (replace with actual data)
-  const messages = [
-    { text: "Hello!", isUser: false, status: "received" },
-    { text: "Hi there!", isUser: true, status: "read" },
-    { text: "How are you?", isUser: false, status: "received" },
-    { text: "I'm good, thanks!", isUser: true, status: "sent" },
-  ];
+  // Scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  // Handle file attachment
+  useEffect(scrollToBottom, [messages]);
+
+  // Fetch initial messages and setup socket
+  useEffect(() => {
+    const initializeChat = async () => {
+      if (!selectedContact?.chatId) return;
+
+      try {
+        const { data } = await fetchChatMessages(selectedContact.chatId);
+        setMessages(data);
+
+        socketRef.current = io("http://localhost:5000", {
+          withCredentials: true,
+          transports: ["websocket"],
+        });
+
+        const socket = socketRef.current;
+        socket.emit("joinChat", { chatId: selectedContact.chatId });
+
+        socket.on("newMessage", (newMessage) => {
+          setMessages((prev) => [...prev, newMessage]);
+        });
+
+        socket.on("messageStatus", (updatedMessage) => {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg._id === updatedMessage._id ? updatedMessage : msg
+            )
+          );
+        });
+      } catch (error) {
+        console.error("Chat initialization error:", error);
+      }
+    };
+
+    initializeChat();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [selectedContact?.chatId]);
+
+  // Handle file attachments
   const handleFileAttach = (event) => {
     const file = event.target.files[0];
     if (file) {
       console.log("File attached:", file.name);
-      // Handle file upload logic here
+      // TODO: Implement file upload logic
     }
   };
 
-  // Handle image attachment
+  // Handle image attachments
   const handleImageAttach = (event) => {
     const image = event.target.files[0];
     if (image) {
       console.log("Image attached:", image.name);
-      // Handle image upload logic here
+      // TODO: Implement image upload logic
     }
   };
 
   // Handle emoji selection
   const handleEmojiClick = (emoji) => {
-    setMessage((prevMessage) => prevMessage + emoji.emoji);
-    setShowEmojiPicker(false); // Close the emoji picker after selection
+    setMessage((prev) => prev + emoji.emoji);
+    setShowEmojiPicker(false);
   };
 
-  // Handle opening the block menu
-  const handleAvatarClick = (event) => {
-    setAnchorEl(event.currentTarget);
+  // Handle message sending
+  const handleSendMessage = async () => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage || isSending) return;
+
+    setIsSending(true);
+    let chatId = selectedContact.chatId;
+    const tempMessageId = Date.now().toString();
+
+    try {
+      // Optimistic update
+      setMessages((prev) => [
+        ...prev,
+        {
+          _id: tempMessageId,
+          content: trimmedMessage,
+          sender: currentUserId,
+          status: "pending",
+          createdAt: new Date(),
+        },
+      ]);
+
+      // Create chat if needed
+      if (!chatId) {
+        const { data } = await createChat({
+          participantIds: [currentUserId, selectedContact._id],
+        });
+        chatId = data.chat._id;
+        selectedContact.chatId = chatId;
+      }
+
+      // Send via API
+      const { data: sentMessage } = await sendMessage(
+        chatId,
+        currentUserId,
+        trimmedMessage
+      );
+
+      // Replace temporary message
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === tempMessageId ? { ...sentMessage, status: "sent" } : msg
+        )
+      );
+
+      setMessage("");
+    } catch (error) {
+      console.error("Message send error:", error);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === tempMessageId ? { ...msg, status: "failed" } : msg
+        )
+      );
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  // Handle closing the block menu
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  // Handle blocking the contact
-  const handleBlockContact = () => {
-    onBlockContact(selectedContact); // Call the parent function to block the contact
-    handleMenuClose();
+  // Handle Enter key for sending
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
@@ -70,63 +167,78 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
         display: "flex",
         flexDirection: "column",
         width: "100%",
+        height: "100%",
       }}
     >
-      {/* User Card (Desktop Only) */}
+      {/* Chat Header (Desktop) */}
       {!isMobile && (
         <Box
           sx={{
             p: 2,
             borderBottom: "1px solid",
-            borderColor: "divider", // Use theme's divider color
+            borderColor: "divider",
             display: "flex",
             alignItems: "center",
+            cursor: "pointer",
           }}
+          onClick={(e) => setAnchorEl(e.currentTarget)}
         >
-          <IconButton onClick={handleAvatarClick}>
-            <UserCard user={selectedContact} size="small" />
-          </IconButton>
-
-          {/* Block Menu */}
+          <UserCard user={selectedContact} size="small" />
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
+            onClose={() => setAnchorEl(null)}
           >
-            <MenuItem onClick={handleBlockContact}>Block Contact</MenuItem>
+            <MenuItem
+              onClick={() => {
+                onBlockContact(selectedContact);
+                setAnchorEl(null);
+              }}
+            >
+              Block Contact
+            </MenuItem>
           </Menu>
         </Box>
       )}
 
-      {/* Chat History */}
-      <Box sx={{ flexGrow: 1, overflowY: "auto", p: 2 }}>
-        {messages.map((message, index) => (
-          <Message
-            key={index}
-            text={message.text}
-            isUser={message.isUser}
-            status={message.status}
-          />
-        ))}
-      </Box>
-
-      {/* Message Input */}
+      {/* Messages Container */}
       <Box
         sx={{
-          p: 1, // Reduced padding for the container
-          borderTop: "1px solid",
-          borderColor: "divider", // Use theme's divider color
+          flexGrow: 1,
+          overflowY: "auto",
+          p: 2,
           display: "flex",
-          alignItems: "center",
-          gap: 0.5, // Reduced gap between elements
+          flexDirection: "column",
+          gap: 2,
         }}
       >
-        {/* Icons on the Left */}
+        {messages.map((msg) => (
+          <Message
+            key={msg._id}
+            text={msg.content}
+            isUser={msg.sender === currentUserId}
+            status={msg.status}
+            timestamp={new Date(msg.createdAt)}
+          />
+        ))}
+        <div ref={messagesEndRef} />
+      </Box>
+
+      {/* Message Input Area */}
+      <Box
+        sx={{
+          p: 1.5,
+          borderTop: "1px solid",
+          borderColor: "divider",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+          position: "relative",
+        }}
+      >
+        {/* Attachment Buttons */}
         <Box sx={{ display: "flex", gap: 0.5 }}>
-          {/* File Attachment Button */}
-          <IconButton component="label" sx={{ p: 1 }}>
-            {" "}
-            {/* Reduced padding */}
+          <IconButton component="label" disabled={isSending}>
             <input
               type="file"
               hidden
@@ -135,11 +247,7 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
             />
             <AttachFileIcon />
           </IconButton>
-
-          {/* Image Attachment Button */}
-          <IconButton component="label" sx={{ p: 1 }}>
-            {" "}
-            {/* Reduced padding */}
+          <IconButton component="label" disabled={isSending}>
             <input
               type="file"
               hidden
@@ -148,36 +256,43 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
             />
             <ImageIcon />
           </IconButton>
-
-          {/* Emoji Button */}
           <IconButton
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            sx={{ p: 1 }} // Reduced padding
+            disabled={isSending}
           >
             <EmojiEmotionsIcon />
           </IconButton>
         </Box>
 
-        {/* Input Field (Takes All Available Space) */}
+        {/* Message Input */}
         <TextField
           fullWidth
-          placeholder="Type a message"
+          multiline
+          maxRows={4}
+          placeholder="Type a message..."
           size="small"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          sx={{ flexGrow: 1, mx: 0.5 }} // Minimal margin for separation
+          onKeyPress={handleKeyPress}
+          disabled={isSending}
+          sx={{
+            flexGrow: 1,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 4,
+            },
+          }}
         />
 
-        {/* Send Button on the Right */}
+        {/* Send Button */}
         <IconButton
+          onClick={handleSendMessage}
+          disabled={!message.trim() || isSending}
           sx={{
-            p: 1, // Reduced padding
-            borderRadius: "50%", // Make the button round
-            backgroundColor: "background.paper", // Use theme's paper color
-            color: "primary.main", // Blue icon
-            "&:hover": {
-              backgroundColor: "action.hover", // Use theme's hover color
-            },
+            p: 1.5,
+            backgroundColor: "primary.main",
+            color: "primary.contrastText",
+            "&:hover": { backgroundColor: "primary.dark" },
+            "&:disabled": { backgroundColor: "action.disabledBackground" },
           }}
         >
           <SendIcon />
@@ -185,8 +300,18 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
 
         {/* Emoji Picker */}
         {showEmojiPicker && (
-          <Box sx={{ position: "absolute", bottom: 80, right: 16 }}>
-            <EmojiPicker onEmojiClick={handleEmojiClick} />
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 70,
+              right: 16,
+              zIndex: 999,
+            }}
+          >
+            <EmojiPicker
+              onEmojiClick={handleEmojiClick}
+              previewConfig={{ showPreview: false }}
+            />
           </Box>
         )}
       </Box>
@@ -196,11 +321,13 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
 
 ChatWindow.propTypes = {
   selectedContact: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
     profilePicture: PropTypes.string.isRequired,
     status: PropTypes.oneOf(["online", "offline", "busy", "blocked"])
       .isRequired,
+    chatId: PropTypes.string,
   }).isRequired,
   isMobile: PropTypes.bool.isRequired,
-  onBlockContact: PropTypes.func.isRequired, // Function to handle blocking a contact
+  onBlockContact: PropTypes.func.isRequired,
 };

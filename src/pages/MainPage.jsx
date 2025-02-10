@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import {
   Box,
   CssBaseline,
@@ -7,6 +7,7 @@ import {
   MenuItem,
   useMediaQuery,
   Fab,
+  CircularProgress,
 } from "@mui/material";
 import { AppBarComponent } from "../components/AppBarComponent";
 import { UserProfileBox } from "../components/UserProfileBox";
@@ -18,10 +19,11 @@ import { SearchUserDialog } from "../components/SearchUserDialog";
 import { AddUserDialog } from "../components/AddUserDialog";
 import { Sidebar } from "../components/SideBar";
 import { DrawerMenu } from "../components/DrawerMenu";
+import { fetchMainUser } from "../api";
 
 export const MainPage = () => {
   const [userProfile, setUserProfile] = useState(user);
-  const [contactList] = useState(contacts);
+  const [contactList, setContactList] = useState(contacts);
   const [anchorEl, setAnchorEl] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newPersonalMessage, setNewPersonalMessage] = useState(
@@ -34,6 +36,7 @@ export const MainPage = () => {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isSearchUserDialogOpen, setIsSearchUserDialogOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -88,6 +91,35 @@ export const MainPage = () => {
     console.log(`Clicked on: ${option}`);
     toggleDrawer();
   };
+
+  // Fetch main user data on component mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const mainUser = await fetchMainUser();
+        console.log(mainUser);
+        // Transform API response to match component needs
+        setUserProfile({
+          ...mainUser,
+          personalMessage: mainUser.customMessage || "",
+        });
+
+        // Transform contacts data
+        setContactList(
+          mainUser.contacts.map((contact) => ({
+            ...contact,
+            personalMessage: contact.customMessage || "",
+          }))
+        );
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   return (
     <Box
@@ -158,11 +190,26 @@ export const MainPage = () => {
             }}
           >
             {selectedContact ? (
-              <ChatWindow
-                selectedContact={selectedContact}
-                isMobile={isMobile}
-                onBlockContact={handleBlockContact}
-              />
+              <>
+                {loading ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100vh",
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                ) : (
+                  <ChatWindow
+                    selectedContact={selectedContact}
+                    isMobile={isMobile}
+                    onBlockContact={handleBlockContact}
+                  />
+                )}
+              </>
             ) : (
               <Box
                 sx={{

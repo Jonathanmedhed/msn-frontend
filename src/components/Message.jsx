@@ -1,63 +1,61 @@
 import { Box, Typography, Paper } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import PropTypes from "prop-types";
 
-export const Message = ({ text, isUser, status }) => {
-  // Define colors for user and contact messages
-  const userColor = "#1976d2"; // Blue for user messages
-  const contactColor = "#4caf50"; // Green for contact messages
-
-  // Define status icons
-  const statusIcons = {
-    sent: <CheckCircleOutlineIcon fontSize="small" sx={{ color: "gray" }} />,
-    received: (
-      <>
-        <CheckCircleOutlineIcon fontSize="small" sx={{ color: "gray" }} />
-        <CheckCircleOutlineIcon fontSize="small" sx={{ color: "gray" }} />
-      </>
-    ),
-    read: (
-      <>
-        <CheckCircleIcon fontSize="small" sx={{ color: userColor }} />
-        <CheckCircleIcon fontSize="small" sx={{ color: userColor }} />
-      </>
-    ),
+export const Message = ({ text, isUser, status, timestamp }) => {
+  const getStatusIcon = () => {
+    switch (status) {
+      case "sent":
+        return <CheckCircleOutlineIcon fontSize="small" color="disabled" />;
+      case "delivered":
+        return (
+          <>
+            <CheckCircleOutlineIcon fontSize="small" color="disabled" />
+            <CheckCircleOutlineIcon fontSize="small" color="disabled" />
+          </>
+        );
+      case "read":
+        return (
+          <>
+            <CheckCircleIcon fontSize="small" color="primary" />
+            <CheckCircleIcon fontSize="small" color="primary" />
+          </>
+        );
+      case "failed":
+        return <ErrorOutlineIcon fontSize="small" color="error" />;
+      default:
+        return <CheckCircleOutlineIcon fontSize="small" color="disabled" />;
+    }
   };
 
   return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: isUser ? "flex-end" : "flex-start",
-        mb: 2,
-      }}
-    >
+    <Box sx={{ display: "flex", flexDirection: "column", mb: 2 }}>
       <Paper
         sx={{
           p: 2,
-          backgroundColor: isUser ? userColor : contactColor,
+          backgroundColor: isUser ? "#1976d2" : "#4caf50",
           color: "white",
-          borderRadius: isUser
-            ? "20px 20px 0 20px" // Rounded corners for user messages
-            : "20px 20px 20px 0", // Rounded corners for contact messages
+          borderRadius: isUser ? "20px 20px 0 20px" : "20px 20px 20px 0",
           maxWidth: "70%",
         }}
       >
         <Typography>{text}</Typography>
       </Paper>
-      {/* Status Icons */}
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 0.5,
+          gap: 1,
           mt: 0.5,
           justifyContent: isUser ? "flex-end" : "flex-start",
         }}
       >
-        {statusIcons[status]}
+        <Typography variant="caption" color="textSecondary">
+          {new Date(timestamp).toLocaleTimeString()}
+        </Typography>
+        {getStatusIcon()}
       </Box>
     </Box>
   );
@@ -66,5 +64,7 @@ export const Message = ({ text, isUser, status }) => {
 Message.propTypes = {
   text: PropTypes.string.isRequired,
   isUser: PropTypes.bool.isRequired,
-  status: PropTypes.oneOf(["sent", "received", "read"]).isRequired,
+  status: PropTypes.oneOf(["pending", "sent", "delivered", "read", "failed"])
+    .isRequired,
+  timestamp: PropTypes.instanceOf(Date).isRequired,
 };
