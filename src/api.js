@@ -6,7 +6,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor for adding JWT token
+// Request interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -14,6 +14,16 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+export const fetchMainUser = async () => {
+  try {
+    const response = await api.get("/users/main-user");
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
 
 // Response interceptor for handling errors globally
 api.interceptors.response.use(
@@ -39,6 +49,7 @@ const handleFileUploadError = (error) => {
 export const loginUser = async (email, password) => {
   try {
     const response = await api.post("/users/login", { email, password });
+
     return response.data;
   } catch (error) {
     return Promise.reject(error);
@@ -48,16 +59,6 @@ export const loginUser = async (email, password) => {
 export const registerUser = async (userData) => {
   try {
     const response = await api.post("/users/register", userData);
-    return response.data;
-  } catch (error) {
-    return Promise.reject(error);
-  }
-};
-
-export const fetchMainUser = async () => {
-  try {
-    const response = await api.get("/users/main-user");
-    console.log(response.data);
     return response.data;
   } catch (error) {
     return Promise.reject(error);
@@ -122,12 +123,15 @@ export const deleteUser = async (userId) => {
   }
 };
 
-// Chat API
 export const createChat = async (participantIds) => {
   try {
+    console.log("Sending participantIds:", participantIds);
+    // Wrap the array in an object with the expected key
     const response = await api.post("/chats/create", { participantIds });
+    console.log("Chat created:", response.data);
     return response.data;
   } catch (error) {
+    console.error("Chat creation failed:", error.message);
     return Promise.reject(error);
   }
 };
@@ -135,11 +139,12 @@ export const createChat = async (participantIds) => {
 export const sendMessage = async (chatId, senderId, content) => {
   try {
     const response = await api.post(`/chats/${chatId}/send`, {
-      senderId,
+      senderId, // Match backend's expected parameter name
       content,
     });
     return response.data;
   } catch (error) {
+    console.error("Message send failed:", error);
     return Promise.reject(error);
   }
 };
@@ -147,15 +152,16 @@ export const sendMessage = async (chatId, senderId, content) => {
 export const fetchChatMessages = async (chatId) => {
   try {
     const response = await api.get(`/chats/${chatId}/messages`);
-    return response.data;
+    return response.data; // Should return the messages array directly
   } catch (error) {
+    console.error("Error fetching messages:", error);
     return Promise.reject(error);
   }
 };
 
 export const fetchUserChats = async (userId) => {
   try {
-    const response = await api.get(`/chats/user/${userId}`);
+    const response = await api.get(`/chats/user/${String(userId)}`);
     return response.data;
   } catch (error) {
     return Promise.reject(error);

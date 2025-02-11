@@ -8,6 +8,7 @@ import {
   useMediaQuery,
   Fab,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import { AppBarComponent } from "../components/AppBarComponent";
 import { UserProfileBox } from "../components/UserProfileBox";
@@ -19,11 +20,12 @@ import { SearchUserDialog } from "../components/SearchUserDialog";
 import { AddUserDialog } from "../components/AddUserDialog";
 import { Sidebar } from "../components/SideBar";
 import { DrawerMenu } from "../components/DrawerMenu";
-import { fetchMainUser } from "../api";
+import { fetchMainUser, fetchUserChats, loginUser } from "../api";
 
 export const MainPage = () => {
   const [userProfile, setUserProfile] = useState(user);
   const [contactList, setContactList] = useState(contacts);
+  const [chatList, setChatList] = useState(contacts);
   const [anchorEl, setAnchorEl] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newPersonalMessage, setNewPersonalMessage] = useState(
@@ -62,7 +64,15 @@ export const MainPage = () => {
     searchInputRef.current.blur();
   };
   const handleMagnifierClick = () => searchInputRef.current.focus();
-  const handleContactSelect = (contact) => setSelectedContact(contact);
+  const handleContactSelect = (contact) => {
+    setSelectedContact(contact);
+    // Also update the contactList if needed
+    setContactList((prevContacts) =>
+      prevContacts.map((contact) =>
+        contact._id === contact._id ? contact : contact
+      )
+    );
+  };
   const showBackButton = isMobile && selectedContact !== null;
   const handleBackClick = () => setSelectedContact(null);
   const filteredContacts = useMemo(
@@ -97,20 +107,26 @@ export const MainPage = () => {
     const fetchUserData = async () => {
       try {
         const mainUser = await fetchMainUser();
-        console.log(mainUser);
-        // Transform API response to match component needs
-        setUserProfile({
-          ...mainUser,
-          personalMessage: mainUser.customMessage || "",
-        });
+        // Convert mainUser._id to a string to be safe
+        const userChats = await fetchUserChats(mainUser._id.toString());
 
-        // Transform contacts data
-        setContactList(
-          mainUser.contacts.map((contact) => ({
+        // Map chats to contacts by finding a chat that includes the contact
+        const contactsWithChats = mainUser.contacts.map((contact) => {
+          // Ensure both IDs are compared as strings
+          const chat = userChats.find((chat) =>
+            chat.participants.some(
+              (p) => p._id.toString() === contact._id.toString()
+            )
+          );
+          return {
             ...contact,
+            chatId: chat ? chat._id : null,
             personalMessage: contact.customMessage || "",
-          }))
-        );
+          };
+        });
+        setChatList(userChats);
+        setUserProfile({ ...mainUser });
+        setContactList(contactsWithChats);
       } catch (error) {
         console.error("Error fetching user data:", error);
       } finally {
@@ -145,6 +161,34 @@ export const MainPage = () => {
         isLoggedInUser={!selectedContact || !isMobile}
         onStatusChange={handleStatusChange}
       />
+
+      <Box
+        sx={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 1000,
+        }}
+      >
+        <Button
+          variant="contained"
+          onClick={async () => {
+            try {
+              const response = await loginUser(
+                "mainuser@example.com",
+                "password123"
+              );
+              localStorage.setItem("token", response.token);
+              localStorage.setItem("userId", response.user.id);
+              console.log("Logged in as main user:", response.user);
+            } catch (error) {
+              console.error("Login failed:", error.message);
+            }
+          }}
+        >
+          Temporary Login
+        </Button>
+      </Box>
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -190,26 +234,26 @@ export const MainPage = () => {
             }}
           >
             {selectedContact ? (
-              <>
-                {loading ? (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100vh",
-                    }}
-                  >
-                    <CircularProgress />
-                  </Box>
-                ) : (
-                  <ChatWindow
-                    selectedContact={selectedContact}
-                    isMobile={isMobile}
-                    onBlockContact={handleBlockContact}
-                  />
-                )}
-              </>
+              loading ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100vh",
+                  }}
+                >
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <ChatWindow
+                  selectedContact={selectedContact}
+                  isMobile={isMobile}
+                  onBlockContact={handleBlockContact}
+                  onUpdateContact={handleContactSelect}
+                  chats={chatList} // Pass the main user's chats here
+                />
+              )
             ) : (
               <Box
                 sx={{
@@ -227,24 +271,38 @@ export const MainPage = () => {
           </Box>
         ) : null}
       </Box>
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 16,
-          right: 16,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          gap: 2,
-        }}
-      >
-        <Fab color="primary" onClick={handleAddUserDialogOpen}>
-          <Add />
-        </Fab>
-        <Fab color="secondary" onClick={handleSearchUserDialogOpen}>
-          <Chat />
-        </Fab>
-      </Box>
+      {(!selectedContact || !isMobile) && (
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+            gap: 2,
+          }}
+        >
+          <Fab
+            color="primary"
+            onClick={handleAddUserDialogOpen}
+            sx={{
+              display: { xs: selectedContact ? "none" : "flex", md: "flex" },
+            }}
+          >
+            <Add />
+          </Fab>
+          <Fab
+            color="secondary"
+            onClick={handleSearchUserDialogOpen}
+            sx={{
+              display: { xs: selectedContact ? "none" : "flex", md: "flex" },
+            }}
+          >
+            <Chat />
+          </Fab>
+        </Box>
+      )}
       <AddUserDialog
         open={isAddUserDialogOpen}
         onClose={handleAddUserDialogClose}

@@ -10,17 +10,29 @@ import SendIcon from "@mui/icons-material/Send";
 import EmojiPicker from "emoji-picker-react";
 import { io } from "socket.io-client";
 import { sendMessage, fetchChatMessages, createChat } from "../api";
+import { isValidObjectId } from "../utils/validation";
 
-export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
+export const ChatWindow = ({
+  onUpdateContact,
+  selectedContact,
+  isMobile,
+  onBlockContact,
+  chats,
+}) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
   const currentUserId = localStorage.getItem("userId");
 
+  if (!currentUserId) {
+    throw new Error("User not authenticated");
+  }
   // Scroll to bottom when messages change
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -34,8 +46,9 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
       if (!selectedContact?.chatId) return;
 
       try {
-        const { data } = await fetchChatMessages(selectedContact.chatId);
-        setMessages(data);
+        setIsLoadingMessages(true);
+        const messagesData = await fetchChatMessages(selectedContact.chatId);
+        setMessages(messagesData);
 
         socketRef.current = io("http://localhost:5000", {
           withCredentials: true,
@@ -58,6 +71,9 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
         });
       } catch (error) {
         console.error("Chat initialization error:", error);
+        setMessages([]);
+      } finally {
+        setIsLoadingMessages(false);
       }
     };
 
@@ -104,6 +120,17 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
     const tempMessageId = Date.now().toString();
 
     try {
+      // Validate current user ID
+      const currentUserId = localStorage.getItem("userId");
+      if (!currentUserId) {
+        throw new Error("User not authenticated");
+      }
+
+      // Validate contact ID
+      if (!selectedContact?._id) {
+        throw new Error("Invalid contact selected");
+      }
+
       // Optimistic update
       setMessages((prev) => [
         ...prev,
@@ -118,15 +145,21 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
 
       // Create chat if needed
       if (!chatId) {
-        const { data } = await createChat({
-          participantIds: [currentUserId, selectedContact._id],
-        });
-        chatId = data.chat._id;
-        selectedContact.chatId = chatId;
+        const participantIds = [currentUserId, selectedContact._id];
+        if (
+          participantIds.length !== 2 ||
+          !participantIds.every((id) => isValidObjectId(id))
+        ) {
+          throw new Error("Invalid participant IDs for chat creation");
+        }
+        const newChat = await createChat(participantIds);
+        chatId = newChat._id;
+        // Instead of mutating, update the parent state:
+        onUpdateContact({ ...selectedContact, chatId });
       }
 
       // Send via API
-      const { data: sentMessage } = await sendMessage(
+      const sentMessage = await sendMessage(
         chatId,
         currentUserId,
         trimmedMessage
@@ -144,7 +177,13 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
       console.error("Message send error:", error);
       setMessages((prev) =>
         prev.map((msg) =>
-          msg._id === tempMessageId ? { ...msg, status: "failed" } : msg
+          msg._id === tempMessageId
+            ? {
+                ...msg,
+                status: "failed",
+                error: error.message,
+              }
+            : msg
         )
       );
     } finally {
@@ -159,6 +198,21 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
       handleSendMessage();
     }
   };
+
+  useEffect(() => {
+    if (!selectedContact.chatId && chats && chats.length > 0) {
+      // Find the chat corresponding to the selected contact
+      const chatForContact = chats.find((chat) =>
+        chat.participants.some(
+          (p) => p._id.toString() === selectedContact._id.toString()
+        )
+      );
+      if (chatForContact) {
+        // Update the selected contact with the chat ID
+        onUpdateContact({ ...selectedContact, chatId: chatForContact._id });
+      }
+    }
+  }, [chats, selectedContact, onUpdateContact]);
 
   return (
     <Box
@@ -212,15 +266,28 @@ export const ChatWindow = ({ selectedContact, isMobile, onBlockContact }) => {
           gap: 2,
         }}
       >
-        {messages.map((msg) => (
-          <Message
-            key={msg._id}
-            text={msg.content}
-            isUser={msg.sender === currentUserId}
-            status={msg.status}
-            timestamp={new Date(msg.createdAt)}
-          />
-        ))}
+        {(messages || []).map((msg) => {
+          // If msg.sender is an object with _id, use that.
+          // Otherwise, fall back to using msg.sender directly (e.g., it might be a string).
+          const senderId =
+            (typeof msg.sender === "object" && msg.sender?._id) || msg.sender;
+
+          return (
+            <Message
+              key={msg._id}
+              text={msg.content}
+              isUser={senderId === currentUserId}
+              status={msg.status}
+              timestamp={new Date(msg.createdAt)}
+              senderName={
+                msg.sender
+                  ? msg.sender.name || msg.sender.username
+                  : "Unknown sender"
+              }
+              senderAvatar={msg?.sender?.profilePicture || msg?.sender?.avatar}
+            />
+          );
+        })}
         <div ref={messagesEndRef} />
       </Box>
 
@@ -330,4 +397,6 @@ ChatWindow.propTypes = {
   }).isRequired,
   isMobile: PropTypes.bool.isRequired,
   onBlockContact: PropTypes.func.isRequired,
+  onUpdateContact: PropTypes.func.isRequired,
+  chats: PropTypes.array.isRequired,
 };
