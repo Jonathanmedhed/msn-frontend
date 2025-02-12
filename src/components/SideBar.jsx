@@ -19,6 +19,8 @@ export const Sidebar = ({
   filteredContacts,
   selectedContact,
   handleContactSelect,
+  chatList,
+  isContactList,
 }) => (
   <Box
     sx={{
@@ -62,21 +64,34 @@ export const Sidebar = ({
       />
     </Box>
     <List sx={{ flexGrow: 1, overflowY: "auto" }}>
-      {filteredContacts.map((contact, index) => (
-        <ListItem
-          button
-          key={index}
-          onClick={() => handleContactSelect(contact)}
-          sx={{
-            backgroundColor:
-              selectedContact?.name === contact.name
-                ? "action.selected"
-                : "inherit",
-          }}
-        >
-          <UserCard user={contact} size="md" />
-        </ListItem>
-      ))}
+      {filteredContacts.map((contact, index) => {
+        // Find the chat for this contact (if any)
+        const chatForContact = chatList.find((chat) =>
+          chat.participants.some(
+            (p) => p._id.toString() === contact._id.toString()
+          )
+        );
+        return (
+          <ListItem
+            button
+            key={index}
+            onClick={() => handleContactSelect(contact)}
+            sx={{
+              backgroundColor:
+                selectedContact?.name === contact.name
+                  ? "action.selected"
+                  : "inherit",
+            }}
+          >
+            <UserCard
+              user={contact}
+              size="md"
+              chat={chatForContact}
+              isContactList={isContactList}
+            />
+          </ListItem>
+        );
+      })}
     </List>
   </Box>
 );
@@ -87,31 +102,48 @@ Sidebar.propTypes = {
   handleSearchChange: PropTypes.func.isRequired,
   handleMagnifierClick: PropTypes.func.isRequired,
   handleClearSearch: PropTypes.func.isRequired,
+  isContactList: PropTypes.bool,
   filteredContacts: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      _id: PropTypes.string.isRequired,
       name: PropTypes.string.isRequired,
-      email: PropTypes.string.isRequired,
+      email: PropTypes.string,
       profilePicture: PropTypes.string.isRequired,
       bio: PropTypes.string,
       customMessage: PropTypes.string,
       status: PropTypes.string.isRequired,
-      isOnline: PropTypes.bool.isRequired,
-      lastSeen: PropTypes.instanceOf(Date).isRequired,
+      isOnline: PropTypes.bool,
+      lastSeen: PropTypes.instanceOf(Date),
     })
   ).isRequired,
   selectedContact: PropTypes.shape({
-    id: PropTypes.string.isRequired,
+    _id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
-    email: PropTypes.string.isRequired,
+    email: PropTypes.string,
     profilePicture: PropTypes.string.isRequired,
     bio: PropTypes.string,
     customMessage: PropTypes.string,
     status: PropTypes.string.isRequired,
-    isOnline: PropTypes.bool.isRequired,
-    lastSeen: PropTypes.instanceOf(Date).isRequired,
+    isOnline: PropTypes.bool,
+    lastSeen: PropTypes.instanceOf(Date),
   }),
   handleContactSelect: PropTypes.func.isRequired,
+  chatList: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      participants: PropTypes.arrayOf(
+        PropTypes.shape({
+          _id: PropTypes.any.isRequired,
+        })
+      ).isRequired,
+      messages: PropTypes.arrayOf(
+        PropTypes.shape({
+          content: PropTypes.string.isRequired,
+          // add other message fields if needed
+        })
+      ),
+    })
+  ).isRequired,
 };
 
 Sidebar.defaultProps = {

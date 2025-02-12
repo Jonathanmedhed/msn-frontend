@@ -4,52 +4,76 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import PropTypes from "prop-types";
 
-export const Message = ({ text, isUser, status, timestamp, error }) => {
+export const Message = ({
+  text,
+  isUser,
+  status,
+  timestamp,
+  error,
+  isContactList,
+}) => {
+  const iconSize = isContactList ? "0.1rem" : "small";
+
   const getStatusIcon = () => {
     switch (status) {
       case "sent":
-        return <CheckCircleOutlineIcon fontSize="small" color="disabled" />;
+        return <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />;
       case "delivered":
         return (
           <>
-            <CheckCircleOutlineIcon fontSize="small" color="disabled" />
-            <CheckCircleOutlineIcon fontSize="small" color="disabled" />
+            <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />
+            <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />
           </>
         );
       case "read":
         return (
           <>
-            <CheckCircleIcon fontSize="small" color="primary" />
-            <CheckCircleIcon fontSize="small" color="primary" />
+            <CheckCircleIcon fontSize={iconSize} color="primary" />
+            <CheckCircleIcon fontSize={iconSize} color="primary" />
           </>
         );
       case "failed":
-        return <ErrorOutlineIcon fontSize="small" color="error" />;
+        return <ErrorOutlineIcon fontSize={iconSize} color="error" />;
       default:
-        return <CheckCircleOutlineIcon fontSize="small" color="disabled" />;
+        return <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />;
     }
   };
 
   return (
     <Box
       sx={{
+        position: "relative",
         display: "flex",
         flexDirection: "column",
-        mb: 2,
+        mb: isContactList ? 0 : 2,
         alignSelf: isUser ? "flex-end" : "flex-start",
-        maxWidth: "85%",
+        width: isContactList ? "fit-content" : "auto",
+        maxWidth: isContactList ? "50%" : "85%",
       }}
     >
       {/* Message Bubble */}
       <Paper
         sx={{
-          p: 2,
+          p: isContactList ? "3px 7px 3px 7px" : "9px 13px 9px 13px",
           backgroundColor: isUser ? "#1976d2" : "#4caf50",
           color: "white",
           borderRadius: isUser ? "20px 20px 0 20px" : "20px 20px 20px 0",
         }}
       >
-        <Typography variant="body1">{text}</Typography>
+        {isContactList ? (
+          <Typography
+            variant="body1"
+            fontSize={10}
+            sx={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {text}
+          </Typography>
+        ) : (
+          <Typography variant="body1">{text}</Typography>
+        )}
       </Paper>
 
       {/* Meta Information */}
@@ -81,13 +105,27 @@ export const Message = ({ text, isUser, status, timestamp, error }) => {
             gap: 0.5,
           }}
         >
-          <Typography variant="caption" color="textSecondary">
-            {new Date(timestamp).toLocaleTimeString([], {
-              hour: "numeric",
-              minute: "2-digit",
-            })}
-          </Typography>
-          {getStatusIcon()}
+          {!isContactList && (
+            <Typography variant="caption" color="textSecondary">
+              {new Date(timestamp).toLocaleTimeString([], {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
+            </Typography>
+          )}
+          {!isContactList ? (
+            getStatusIcon()
+          ) : (
+            <Box
+              sx={{
+                position: "absolute",
+                top: "0.1rem",
+                right: "-1.2rem",
+              }}
+            >
+              {getStatusIcon()}
+            </Box>
+          )}
         </Box>
       </Box>
     </Box>
@@ -97,6 +135,7 @@ export const Message = ({ text, isUser, status, timestamp, error }) => {
 Message.propTypes = {
   text: PropTypes.string.isRequired,
   isUser: PropTypes.bool.isRequired,
+  isContactList: PropTypes.bool,
   status: PropTypes.oneOf(["pending", "sent", "delivered", "read", "failed"])
     .isRequired,
   timestamp: PropTypes.instanceOf(Date).isRequired,

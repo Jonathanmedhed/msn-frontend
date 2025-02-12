@@ -18,7 +18,6 @@ api.interceptors.request.use((config) => {
 export const fetchMainUser = async () => {
   try {
     const response = await api.get("/users/main-user");
-    console.log(response.data);
     return response.data;
   } catch (error) {
     return Promise.reject(error);
@@ -128,7 +127,7 @@ export const createChat = async (participantIds) => {
     console.log("Sending participantIds:", participantIds);
     // Wrap the array in an object with the expected key
     const response = await api.post("/chats/create", { participantIds });
-    console.log("Chat created:", response.data);
+
     return response.data;
   } catch (error) {
     console.error("Chat creation failed:", error.message);

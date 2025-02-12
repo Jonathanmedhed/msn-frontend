@@ -8,9 +8,11 @@ import {
   MenuItem,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import BlockIcon from "@mui/icons-material/Block"; // Import the Block icon
+import BlockIcon from "@mui/icons-material/Block";
 import PropTypes from "prop-types";
 import { useState } from "react";
+// Import the Message component used in ChatWindow for consistent styling
+import { Message } from "./Message";
 
 export const UserCard = ({
   user,
@@ -19,10 +21,14 @@ export const UserCard = ({
   onEditClick,
   alwaysShowPersonalMessage = false,
   largeStatus = false,
-  avatarSizeMultiplier = 1, // New prop to control avatar size
+  avatarSizeMultiplier = 1,
   isLoggedInUser = false,
   onStatusChange,
+  chat, // new prop for the chat object
+  isContactList,
 }) => {
+  console.log(`${user.name} Chat: `, chat);
+
   const getStatusColor = (status) => {
     switch (status) {
       case "online":
@@ -36,30 +42,37 @@ export const UserCard = ({
     }
   };
 
-  const [anchorEl, setAnchorEl] = useState(null); // For the status menu
-  // Handle closing the status menu
+  const [anchorEl, setAnchorEl] = useState(null);
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
-
-  // Handle status change
   const handleStatusSelect = (status) => {
-    onStatusChange(status); // Call the parent function to update the status
+    onStatusChange(status);
     handleMenuClose();
   };
 
   const isBlocked = user.status === "blocked";
-  const baseAvatarSize = size === "lg" ? 100 : size === "md" ? 70 : 60; // Base size for the avatar
-  const avatarSize = baseAvatarSize * avatarSizeMultiplier; // Apply multiplier
+  const baseAvatarSize = size === "lg" ? 100 : size === "md" ? 70 : 60;
+  const avatarSize = baseAvatarSize * avatarSizeMultiplier;
 
-  // Handle opening the status menu
   const handleAvatarClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
+  // Determine if there is a lastMessage on the chat
+  const hasLastMessage = chat && chat.lastMessage && chat.lastMessage.content;
+  const lastMessage = hasLastMessage ? chat.lastMessage.content : "";
+  // Use customMessage, or fallback to personalMessage or bio if available
+  const customMessage = user.customMessage || user.personalMessage || user.bio;
+
   return (
     <Box
-      sx={{ display: "flex", alignItems: "center", width: "100%", padding: 1 }}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        width: "100%",
+        padding: 1,
+      }}
     >
       {/* Avatar with Status Indicator */}
       <Badge
@@ -71,8 +84,8 @@ export const UserCard = ({
             backgroundColor: getStatusColor(user.status),
             color: getStatusColor(user.status),
             boxShadow: `0 0 0 2px white`,
-            width: largeStatus ? 16 : 12, // Adjust status circle size
-            height: largeStatus ? 16 : 12, // Adjust status circle size
+            width: largeStatus ? 16 : 12,
+            height: largeStatus ? 16 : 12,
             borderRadius: "50%",
           },
         }}
@@ -84,7 +97,6 @@ export const UserCard = ({
             height: avatarSize,
           }}
         >
-          {/* Avatar with Status Indicator */}
           <IconButton onClick={handleAvatarClick}>
             <Avatar
               alt={user.name}
@@ -92,11 +104,10 @@ export const UserCard = ({
               sx={{
                 width: "100%",
                 height: "100%",
-                opacity: isBlocked ? 0.5 : 1, // Reduce opacity if blocked
+                opacity: isBlocked ? 0.5 : 1,
               }}
             />
           </IconButton>
-          {/* Blocked Icon */}
 
           {isBlocked && (
             <Box
@@ -109,21 +120,21 @@ export const UserCard = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                zIndex: 1, // Ensure the icon is in front of the avatar
+                zIndex: 1,
               }}
             >
               <BlockIcon
                 onClick={handleAvatarClick}
                 sx={{
-                  fontSize: avatarSize, // Match the avatar size
-                  color: "red", // Red color for the blocked icon
+                  fontSize: avatarSize,
+                  color: "red",
                   width: "100%",
                   height: "100%",
                 }}
               />
             </Box>
           )}
-          {/* Status Menu */}
+
           {isLoggedInUser ? (
             <Menu
               anchorEl={anchorEl}
@@ -178,35 +189,94 @@ export const UserCard = ({
       </Badge>
 
       {/* User Info */}
-      <Box sx={{ flexGrow: 1, ml: 2 }}>
-        <Typography variant="h6">{user.name}</Typography>
-        {!alwaysShowPersonalMessage && (
-          <Typography variant="body2" color="textSecondary">
-            {user.status}
-          </Typography>
-        )}
-
-        {/* Always show personal message */}
-        {alwaysShowPersonalMessage && (
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-              {user.customMessage}
+      {hasLastMessage ? (
+        // If a lastMessage exists, use a two-row layout:
+        // Top row: Name and customMessage (both left aligned with ellipsis)
+        // Bottom row: lastMessage rendered as a message bubble
+        <Box
+          sx={{
+            flexGrow: 1,
+            ml: 2,
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: isContactList ? "center" : "",
+            alignContent: isContactList ? "center" : "",
+          }}
+        >
+          {/* Top row */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6" noWrap>
+              {user.name}
             </Typography>
-            {showEditIcon && (
-              <IconButton
-                onClick={onEditClick}
+            {customMessage && (
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                noWrap
                 sx={{
-                  fontSize: "inherit", // Match the font size of the Typography
-                  padding: 0, // Remove padding to align better with text
-                  marginLeft: 1, // Add some spacing between text and icon
+                  ml: 1, // space between name and custom message
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  pt: 0.5,
                 }}
               >
-                <EditIcon fontSize="inherit" />
-              </IconButton>
+                {customMessage}
+              </Typography>
             )}
           </Box>
-        )}
-      </Box>
+          {/* Bottom row: Render lastMessage as a bubble with reduced padding */}
+          {lastMessage && (
+            <Box sx={{ maxWidth: "80%" }}>
+              <Message
+                text={lastMessage}
+                isUser={false}
+                isContactList={true}
+                sx={{ py: 0.5 }}
+              />
+            </Box>
+          )}
+        </Box>
+      ) : (
+        // Otherwise, use the default layout.
+        <Box sx={{ flexGrow: 1, ml: 2 }}>
+          <Typography variant="h6">{user.name}</Typography>
+          {!alwaysShowPersonalMessage && (
+            <Typography variant="body2" color="textSecondary">
+              {user.status}
+            </Typography>
+          )}
+          {alwaysShowPersonalMessage && (
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Typography
+                variant="body2"
+                color="textSecondary"
+                sx={{ mt: 1, overflow: "hidden", textOverflow: "ellipsis" }}
+                noWrap
+              >
+                {customMessage}
+              </Typography>
+              {showEditIcon && (
+                <IconButton
+                  onClick={onEditClick}
+                  sx={{
+                    fontSize: "inherit",
+                    padding: 0,
+                    marginLeft: 1,
+                  }}
+                >
+                  <EditIcon fontSize="inherit" />
+                </IconButton>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };
@@ -218,6 +288,8 @@ UserCard.propTypes = {
     status: PropTypes.oneOf(["online", "offline", "busy", "blocked"])
       .isRequired,
     customMessage: PropTypes.string,
+    personalMessage: PropTypes.string,
+    bio: PropTypes.string,
   }).isRequired,
   size: PropTypes.oneOf(["lg", "md"]),
   showArrow: PropTypes.bool,
@@ -225,8 +297,28 @@ UserCard.propTypes = {
   onArrowClick: PropTypes.func,
   onEditClick: PropTypes.func,
   alwaysShowPersonalMessage: PropTypes.bool,
-  largeStatus: PropTypes.bool, // New prop for larger status circle
-  avatarSizeMultiplier: PropTypes.number, // New prop for avatar size multiplier
+  largeStatus: PropTypes.bool,
+  avatarSizeMultiplier: PropTypes.number,
   onStatusChange: PropTypes.func,
   isLoggedInUser: PropTypes.bool,
+  isContactList: PropTypes.bool,
+  // New prop for the chat object
+  chat: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    participants: PropTypes.arrayOf(
+      PropTypes.shape({
+        _id: PropTypes.any.isRequired,
+      })
+    ).isRequired,
+    messages: PropTypes.arrayOf(
+      PropTypes.shape({
+        content: PropTypes.string.isRequired,
+      })
+    ),
+    lastMessage: PropTypes.shape({
+      _id: PropTypes.string,
+      content: PropTypes.string,
+      createdAt: PropTypes.string,
+    }),
+  }),
 };

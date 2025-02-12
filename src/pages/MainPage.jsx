@@ -14,7 +14,6 @@ import { AppBarComponent } from "../components/AppBarComponent";
 import { UserProfileBox } from "../components/UserProfileBox";
 import { EditPersonalMessageDialog } from "../components/EditPersonalMessageDialog";
 import { ChatWindow } from "../components/ChatWindow";
-import { user, contacts } from "../data/mockData";
 import { Add, Chat } from "@mui/icons-material";
 import { SearchUserDialog } from "../components/SearchUserDialog";
 import { AddUserDialog } from "../components/AddUserDialog";
@@ -23,14 +22,12 @@ import { DrawerMenu } from "../components/DrawerMenu";
 import { fetchMainUser, fetchUserChats, loginUser } from "../api";
 
 export const MainPage = () => {
-  const [userProfile, setUserProfile] = useState(user);
-  const [contactList, setContactList] = useState(contacts);
-  const [chatList, setChatList] = useState(contacts);
+  const [userProfile, setUserProfile] = useState({});
+  const [contactList, setContactList] = useState([]);
+  const [chatList, setChatList] = useState([]);
   const [anchorEl, setAnchorEl] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [newPersonalMessage, setNewPersonalMessage] = useState(
-    user.personalMessage
-  );
+  const [newPersonalMessage, setNewPersonalMessage] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContact, setSelectedContact] = useState(null);
   const isMobile = useMediaQuery("(max-width: 600px)");
@@ -66,11 +63,9 @@ export const MainPage = () => {
   const handleMagnifierClick = () => searchInputRef.current.focus();
   const handleContactSelect = (contact) => {
     setSelectedContact(contact);
-    // Also update the contactList if needed
+    // Optionally update the contact list if needed
     setContactList((prevContacts) =>
-      prevContacts.map((contact) =>
-        contact._id === contact._id ? contact : contact
-      )
+      prevContacts.map((c) => (c._id === contact._id ? contact : c))
     );
   };
   const showBackButton = isMobile && selectedContact !== null;
@@ -146,6 +141,7 @@ export const MainPage = () => {
         width: "100vw",
       }}
     >
+      {console.log("Chat List:", chatList)}
       <CssBaseline />
       <AppBarComponent
         isMobile={isMobile}
@@ -180,7 +176,6 @@ export const MainPage = () => {
               );
               localStorage.setItem("token", response.token);
               localStorage.setItem("userId", response.user.id);
-              console.log("Logged in as main user:", response.user);
             } catch (error) {
               console.error("Login failed:", error.message);
             }
@@ -221,6 +216,8 @@ export const MainPage = () => {
             filteredContacts={filteredContacts}
             selectedContact={selectedContact}
             handleContactSelect={handleContactSelect}
+            chatList={chatList}
+            isContactList={true}
           />
         )}
         {(isMobile && selectedContact) || !isMobile ? (
