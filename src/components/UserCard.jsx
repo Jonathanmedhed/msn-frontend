@@ -27,8 +27,6 @@ export const UserCard = ({
   chat, // new prop for the chat object
   isContactList,
 }) => {
-  console.log(`${user.name} Chat: `, chat);
-
   const getStatusColor = (status) => {
     switch (status) {
       case "online":
@@ -95,9 +93,15 @@ export const UserCard = ({
             position: "relative",
             width: avatarSize,
             height: avatarSize,
+            // Ensure click target matches visual appearance
+            "& .MuiIconButton-root": {
+              width: "100%",
+              height: "100%",
+              padding: 0, // Remove default button padding
+            },
           }}
         >
-          <IconButton onClick={handleAvatarClick}>
+          <IconButton onClick={handleAvatarClick} sx={{ p: 0 }}>
             <Avatar
               alt={user.name}
               src={user.profilePicture}
@@ -105,6 +109,10 @@ export const UserCard = ({
                 width: "100%",
                 height: "100%",
                 opacity: isBlocked ? 0.5 : 1,
+                // Add these three properties
+                borderRadius: "50%",
+                objectFit: "cover",
+                objectPosition: "center",
               }}
             />
           </IconButton>
@@ -256,7 +264,7 @@ export const UserCard = ({
               <Typography
                 variant="body2"
                 color="textSecondary"
-                sx={{ mt: 1, overflow: "hidden", textOverflow: "ellipsis" }}
+                sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
                 noWrap
               >
                 {customMessage}

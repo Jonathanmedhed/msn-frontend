@@ -48,13 +48,13 @@ export const Message = ({
         mb: isContactList ? 0 : 2,
         alignSelf: isUser ? "flex-end" : "flex-start",
         width: isContactList ? "fit-content" : "auto",
-        maxWidth: isContactList ? "50%" : "85%",
+        maxWidth: isContactList ? "75%" : "85%",
       }}
     >
       {/* Message Bubble */}
       <Paper
         sx={{
-          p: isContactList ? "3px 7px 3px 7px" : "9px 13px 9px 13px",
+          p: isContactList ? "3px 9px 3px 7px" : "9px 13px 9px 13px",
           backgroundColor: isUser ? "#1976d2" : "#4caf50",
           color: "white",
           borderRadius: isUser ? "20px 20px 0 20px" : "20px 20px 20px 0",
@@ -63,13 +63,14 @@ export const Message = ({
         {isContactList ? (
           <Typography
             variant="body1"
-            fontSize={10}
+            fontSize={15}
             sx={{
               overflow: "hidden",
               textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            {text}
+            {text.length > 100 ? `${text.substring(0, 100)}...` : text}
           </Typography>
         ) : (
           <Typography variant="body1">{text}</Typography>
@@ -119,7 +120,7 @@ export const Message = ({
             <Box
               sx={{
                 position: "absolute",
-                top: "0.1rem",
+                top: "0.4rem",
                 right: "-1.2rem",
               }}
             >

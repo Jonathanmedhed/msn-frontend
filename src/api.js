@@ -6,7 +6,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor
+// Request interceptor to add auth token if present
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -15,16 +15,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export const fetchMainUser = async () => {
-  try {
-    const response = await api.get("/users/main-user");
-    return response.data;
-  } catch (error) {
-    return Promise.reject(error);
-  }
-};
-
-// Response interceptor for handling errors globally
+// Global response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -44,11 +35,12 @@ const handleFileUploadError = (error) => {
   throw error;
 };
 
-// Authentication API
+/* -------------------------
+   Authentication API
+------------------------- */
 export const loginUser = async (email, password) => {
   try {
     const response = await api.post("/users/login", { email, password });
-
     return response.data;
   } catch (error) {
     return Promise.reject(error);
@@ -64,7 +56,22 @@ export const registerUser = async (userData) => {
   }
 };
 
-// User Profile API
+/* -------------------------
+   User Profile API
+------------------------- */
+
+// Fetch the main user
+export const fetchMainUser = async () => {
+  try {
+    const response = await api.get("/users/main-user");
+    console.log(response.data);
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+// Fetch a user's profile by their ID
 export const fetchUserProfile = async (userId) => {
   try {
     const response = await api.get(`/users/${userId}`);
@@ -74,6 +81,7 @@ export const fetchUserProfile = async (userId) => {
   }
 };
 
+// Update user profile fields (non-file updates)
 export const updateUserProfile = async (userId, data) => {
   try {
     const response = await api.put(`/users/${userId}/update`, data);
@@ -83,10 +91,12 @@ export const updateUserProfile = async (userId, data) => {
   }
 };
 
+// Upload a single profile picture
 export const uploadProfilePicture = async (userId, file) => {
   try {
     const formData = new FormData();
     formData.append("profilePicture", file);
+
     const response = await api.post(
       `/users/${userId}/upload-profile-picture`,
       formData,
@@ -98,10 +108,12 @@ export const uploadProfilePicture = async (userId, file) => {
   }
 };
 
+// Upload multiple pictures (e.g., additional pictures)
 export const uploadPictures = async (userId, files) => {
   try {
     const formData = new FormData();
     files.forEach((file) => formData.append("pictures", file));
+
     const response = await api.post(
       `/users/${userId}/upload-pictures`,
       formData,
@@ -113,6 +125,7 @@ export const uploadPictures = async (userId, files) => {
   }
 };
 
+// Delete a user (if needed)
 export const deleteUser = async (userId) => {
   try {
     const response = await api.delete(`/users/${userId}/delete`);
@@ -122,15 +135,14 @@ export const deleteUser = async (userId) => {
   }
 };
 
+/* -------------------------
+   Chat API
+------------------------- */
 export const createChat = async (participantIds) => {
   try {
-    console.log("Sending participantIds:", participantIds);
-    // Wrap the array in an object with the expected key
     const response = await api.post("/chats/create", { participantIds });
-
     return response.data;
   } catch (error) {
-    console.error("Chat creation failed:", error.message);
     return Promise.reject(error);
   }
 };
@@ -138,12 +150,11 @@ export const createChat = async (participantIds) => {
 export const sendMessage = async (chatId, senderId, content) => {
   try {
     const response = await api.post(`/chats/${chatId}/send`, {
-      senderId, // Match backend's expected parameter name
+      senderId,
       content,
     });
     return response.data;
   } catch (error) {
-    console.error("Message send failed:", error);
     return Promise.reject(error);
   }
 };
@@ -151,9 +162,8 @@ export const sendMessage = async (chatId, senderId, content) => {
 export const fetchChatMessages = async (chatId) => {
   try {
     const response = await api.get(`/chats/${chatId}/messages`);
-    return response.data; // Should return the messages array directly
+    return response.data;
   } catch (error) {
-    console.error("Error fetching messages:", error);
     return Promise.reject(error);
   }
 };
