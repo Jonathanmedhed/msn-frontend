@@ -8,6 +8,8 @@ export const UserProfileBox = ({
   handleEditDialogOpen,
   isLoggedInUser,
   onStatusChange,
+  onBlockContact,
+  blockedContacts,
 }) => {
   return (
     <Box
@@ -30,6 +32,9 @@ export const UserProfileBox = ({
         largeStatus={true} // Make the status circle 1.5 times bigger
         onStatusChange={onStatusChange}
         size="lg"
+        onBlockContact={onBlockContact}
+        blockedContacts={blockedContacts}
+        title="UserProfileBox Card"
       />
     </Box>
   );
@@ -45,5 +50,7 @@ UserProfileBox.propTypes = {
   handleMenuOpen: PropTypes.func.isRequired,
   handleEditDialogOpen: PropTypes.func.isRequired,
   isLoggedInUser: PropTypes.bool.isRequired,
-  onStatusChange: PropTypes.func.isRequired, // Function to handle status change
+  onStatusChange: PropTypes.func.isRequired,
+  onBlockContact: PropTypes.func.isRequired,
+  blockedContacts: PropTypes.array,
 };

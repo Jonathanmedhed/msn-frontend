@@ -20,17 +20,17 @@ export const Message = ({
         return <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />;
       case "delivered":
         return (
-          <>
+          <Box>
             <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />
             <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />
-          </>
+          </Box>
         );
       case "read":
         return (
-          <>
+          <Box>
             <CheckCircleIcon fontSize={iconSize} color="primary" />
             <CheckCircleIcon fontSize={iconSize} color="primary" />
-          </>
+          </Box>
         );
       case "failed":
         return <ErrorOutlineIcon fontSize={iconSize} color="error" />;

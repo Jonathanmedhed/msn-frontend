@@ -125,6 +125,17 @@ export const uploadPictures = async (userId, files) => {
   }
 };
 
+export const blockContact = async (userId, contactId) => {
+  try {
+    const response = await api.put(`/users/${userId}/block-contact`, {
+      contactId,
+    });
+    return response.data;
+  } catch (error) {
+    throw Promise.reject(error);
+  }
+};
+
 // Delete a user (if needed)
 export const deleteUser = async (userId) => {
   try {

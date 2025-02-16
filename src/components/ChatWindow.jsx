@@ -18,13 +18,13 @@ export const ChatWindow = ({
   isMobile,
   onBlockContact,
   chats,
+  blockedContacts,
 }) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   const socketRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -46,7 +46,6 @@ export const ChatWindow = ({
       if (!selectedContact?.chatId) return;
 
       try {
-        setIsLoadingMessages(true);
         const messagesData = await fetchChatMessages(selectedContact.chatId);
         setMessages(messagesData);
 
@@ -72,8 +71,6 @@ export const ChatWindow = ({
       } catch (error) {
         console.error("Chat initialization error:", error);
         setMessages([]);
-      } finally {
-        setIsLoadingMessages(false);
       }
     };
 
@@ -237,7 +234,14 @@ export const ChatWindow = ({
           }}
           onClick={(e) => setAnchorEl(e.currentTarget)}
         >
-          <UserCard user={selectedContact} size="small" />
+          <UserCard
+            user={selectedContact}
+            size="small"
+            onBlockContact={onBlockContact}
+            blockedContacts={blockedContacts}
+            isLoggedInUser={false}
+            title="Chat Window Card"
+          />
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}
@@ -399,4 +403,5 @@ ChatWindow.propTypes = {
   onBlockContact: PropTypes.func.isRequired,
   onUpdateContact: PropTypes.func.isRequired,
   chats: PropTypes.array.isRequired,
+  blockedContacts: PropTypes.array.isRequired,
 };

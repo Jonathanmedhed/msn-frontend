@@ -24,8 +24,11 @@ export const UserCard = ({
   avatarSizeMultiplier = 1,
   isLoggedInUser = false,
   onStatusChange,
-  chat, // new prop for the chat object
+  chat,
   isContactList,
+  onBlockContact,
+  blockedContacts,
+  title,
 }) => {
   const getStatusColor = (status) => {
     switch (status) {
@@ -49,7 +52,10 @@ export const UserCard = ({
     handleMenuClose();
   };
 
-  const isBlocked = user.status === "blocked";
+  const isBlocked = blockedContacts
+    ? blockedContacts.map(String).includes(user._id)
+    : false;
+
   const baseAvatarSize = size === "lg" ? 100 : size === "md" ? 70 : 60;
   const avatarSize = baseAvatarSize * avatarSizeMultiplier;
 
@@ -63,6 +69,9 @@ export const UserCard = ({
   // Use customMessage, or fallback to personalMessage or bio if available
   const customMessage = user.customMessage || user.personalMessage || user.bio;
 
+  console.log("blockedContacts: ", blockedContacts);
+  console.log("_id: ", user._id);
+  console.log("isBlocked: ", isBlocked);
   return (
     <Box
       sx={{
@@ -72,6 +81,7 @@ export const UserCard = ({
         padding: 1,
       }}
     >
+      {console.log("Title: ", title)}
       {/* Avatar with Status Indicator */}
       <Badge
         overlap="circular"
@@ -143,56 +153,56 @@ export const UserCard = ({
             </Box>
           )}
 
-          {isLoggedInUser ? (
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              {["Online", "Away", "Busy", "Offline"].map((status) => (
-                <MenuItem
-                  key={status}
-                  onClick={() => handleStatusSelect(status)}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box
-                      sx={{
-                        width: 12,
-                        height: 12,
-                        borderRadius: "50%",
-                        backgroundColor:
-                          status === "Online"
-                            ? "green"
-                            : status === "Away"
-                            ? "orange"
-                            : status === "Busy"
-                            ? "red"
-                            : "gray",
-                      }}
-                    />
-                    <Typography>{status}</Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Menu>
-          ) : (
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              {[isBlocked ? "Unblock" : "Block"].map((status) => (
-                <MenuItem
-                  key={status}
-                  onClick={() => handleStatusSelect(status)}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography>{status}</Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Menu>
-          )}
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            {/* For logged in user's own card, show status options; for a contact, always show block option */}
+            {isLoggedInUser ? (
+              <Box>
+                {["Online", "Away", "Busy", "Offline"].map((status) => (
+                  <MenuItem
+                    key={status}
+                    onClick={() => {
+                      onStatusChange(status);
+                      handleMenuClose();
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{
+                          width: 12,
+                          height: 12,
+                          borderRadius: "50%",
+                          backgroundColor:
+                            status === "Online"
+                              ? "green"
+                              : status === "Away"
+                              ? "orange"
+                              : status === "Busy"
+                              ? "red"
+                              : "gray",
+                        }}
+                      />
+                      <Typography>{status}</Typography>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Box>
+            ) : (
+              <MenuItem
+                onClick={() => {
+                  onBlockContact(user);
+                  handleMenuClose();
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography>{isBlocked ? "Unblock" : "Block"}</Typography>
+                </Box>
+              </MenuItem>
+            )}
+          </Menu>
         </Box>
       </Badge>
 
@@ -298,7 +308,9 @@ UserCard.propTypes = {
     customMessage: PropTypes.string,
     personalMessage: PropTypes.string,
     bio: PropTypes.string,
+    _id: PropTypes.object,
   }).isRequired,
+  title: PropTypes.string,
   size: PropTypes.oneOf(["lg", "md"]),
   showArrow: PropTypes.bool,
   showEditIcon: PropTypes.bool,
@@ -310,6 +322,8 @@ UserCard.propTypes = {
   onStatusChange: PropTypes.func,
   isLoggedInUser: PropTypes.bool,
   isContactList: PropTypes.bool,
+  onBlockContact: PropTypes.func,
+  blockedContacts: PropTypes.array,
   // New prop for the chat object
   chat: PropTypes.shape({
     _id: PropTypes.string.isRequired,

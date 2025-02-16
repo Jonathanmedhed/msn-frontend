@@ -13,7 +13,13 @@ import {
 import PropTypes from "prop-types";
 import { UserCard } from "./UserCard"; // Import the UserCard component
 
-export const SearchUserDialog = ({ open, onClose, contacts, onSelectUser }) => {
+export const SearchUserDialog = ({
+  open,
+  onClose,
+  contacts,
+  onSelectUser,
+  blockedContacts,
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter contacts based on search query
@@ -51,6 +57,8 @@ export const SearchUserDialog = ({ open, onClose, contacts, onSelectUser }) => {
                       fontSize: "0.50rem", // Reduce user name text size
                     },
                   }}
+                  blockedContacts={blockedContacts}
+                  title="Search Dialog Card"
                 />
               </ListItem>
             ))}
@@ -85,4 +93,5 @@ SearchUserDialog.propTypes = {
     })
   ).isRequired,
   onSelectUser: PropTypes.func.isRequired,
+  blockedContacts: PropTypes.array,
 };

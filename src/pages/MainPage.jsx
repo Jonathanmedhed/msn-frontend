@@ -27,6 +27,7 @@ import {
   updateUserProfile,
   uploadProfilePicture,
   uploadPictures,
+  blockContact,
 } from "../api";
 
 export const MainPage = () => {
@@ -175,6 +176,17 @@ export const MainPage = () => {
     [contactList, searchQuery]
   );
 
+  const handleBlockContact = async (contact) => {
+    try {
+      await blockContact(userProfile._id, contact._id);
+      console.log("Blocked contact:", contact.name);
+      // Optionally update local state to mark the contact as blocked
+      // For example, you might update the contact object in your contactList.
+    } catch (error) {
+      console.error("Error blocking contact:", error);
+    }
+  };
+
   // Fetch main user data and chats on component mount
   useEffect(() => {
     const fetchUserData = async () => {
@@ -228,6 +240,7 @@ export const MainPage = () => {
         onBackClick={handleBackClick}
         toggleSidebar={toggleDrawer}
         isLoggedIn={isLoggedIn}
+        blockedContacts={userProfile.blockedContacts}
       />
       <UserProfileBox
         user={isMobile && selectedContact ? selectedContact : userProfile}
@@ -236,6 +249,8 @@ export const MainPage = () => {
         isMobile={isMobile}
         isLoggedInUser={!selectedContact || !isMobile}
         onStatusChange={handleStatusChange}
+        onBlockContact={handleBlockContact}
+        blockedContacts={userProfile.blockedContacts}
       />
 
       {/* Temporary Login Button */}
@@ -318,6 +333,7 @@ export const MainPage = () => {
             handleContactSelect={handleContactSelect}
             chatList={chatList}
             isContactList={true}
+            blockedContacts={userProfile.blockedContacts}
           />
         )}
         {(isMobile && selectedContact) || !isMobile ? (
@@ -346,11 +362,10 @@ export const MainPage = () => {
                 <ChatWindow
                   selectedContact={selectedContact}
                   isMobile={isMobile}
-                  onBlockContact={(contact) =>
-                    console.log("Blocking contact:", contact.name)
-                  }
+                  onBlockContact={handleBlockContact}
                   onUpdateContact={handleContactSelect}
-                  chats={chatList} // Pass the main user's chats here
+                  chats={chatList}
+                  blockedContacts={userProfile.blockedContacts} // pass blockedContacts here
                 />
               )
             ) : (
@@ -412,6 +427,7 @@ export const MainPage = () => {
         onClose={handleSearchUserDialogClose}
         contacts={contactList}
         onSelectUser={handleSelectUserToChat}
+        blockedContacts={userProfile.blockedContacts}
       />
       <DrawerMenu
         isDrawerOpen={isDrawerOpen}

@@ -360,10 +360,10 @@ export const DrawerMenu = ({
           </ListItem>
         </List>
       ) : (
-        <>
+        <Box>
           {selectedOption === "Profile" && <ProfileContent />}
           {/* Add other option contents here */}
-        </>
+        </Box>
       )}
     </Drawer>
   );
