@@ -22,6 +22,8 @@ export const Sidebar = ({
   chatList,
   isContactList,
   blockedContacts,
+  onRemoveContact,
+  onBlockContact,
 }) => (
   <Box
     sx={{
@@ -91,6 +93,8 @@ export const Sidebar = ({
               isContactList={isContactList}
               blockedContacts={blockedContacts}
               title="SideBar Card"
+              onRemoveContact={onRemoveContact}
+              onBlockContact={onBlockContact}
             />
           </ListItem>
         );
@@ -107,6 +111,8 @@ Sidebar.propTypes = {
   handleClearSearch: PropTypes.func.isRequired,
   isContactList: PropTypes.bool,
   blockedContacts: PropTypes.array,
+  onRemoveContact: PropTypes.func,
+  onBlockContact: PropTypes.func,
   filteredContacts: PropTypes.arrayOf(
     PropTypes.shape({
       _id: PropTypes.string.isRequired,

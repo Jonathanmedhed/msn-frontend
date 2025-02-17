@@ -136,6 +136,17 @@ export const blockContact = async (userId, contactId) => {
   }
 };
 
+export const removeContact = async (userId, contactId) => {
+  try {
+    const response = await api.put(`/users/${userId}/remove-contact`, {
+      contactId,
+    });
+    return response.data;
+  } catch (error) {
+    throw Promise.reject(error);
+  }
+};
+
 // Delete a user (if needed)
 export const deleteUser = async (userId) => {
   try {

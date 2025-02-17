@@ -28,6 +28,7 @@ import {
   uploadProfilePicture,
   uploadPictures,
   blockContact,
+  removeContact,
 } from "../api";
 
 export const MainPage = () => {
@@ -179,11 +180,21 @@ export const MainPage = () => {
   const handleBlockContact = async (contact) => {
     try {
       await blockContact(userProfile._id, contact._id);
-      console.log("Blocked contact:", contact.name);
       // Optionally update local state to mark the contact as blocked
       // For example, you might update the contact object in your contactList.
     } catch (error) {
       console.error("Error blocking contact:", error);
+    }
+  };
+
+  const handleRemoveContact = async (contact) => {
+    try {
+      await removeContact(userProfile._id, contact._id);
+      console.log("Removed contact:", contact.name);
+      // Optionally update local state to mark the contact as blocked
+      // For example, you might update the contact object in your contactList.
+    } catch (error) {
+      console.error("Error removing contact:", error);
     }
   };
 
@@ -251,6 +262,7 @@ export const MainPage = () => {
         onStatusChange={handleStatusChange}
         onBlockContact={handleBlockContact}
         blockedContacts={userProfile.blockedContacts}
+        onRemoveContact={handleRemoveContact}
       />
 
       {/* Temporary Login Button */}
@@ -334,6 +346,8 @@ export const MainPage = () => {
             chatList={chatList}
             isContactList={true}
             blockedContacts={userProfile.blockedContacts}
+            onBlockContact={handleBlockContact}
+            onRemoveContact={handleRemoveContact}
           />
         )}
         {(isMobile && selectedContact) || !isMobile ? (
@@ -365,7 +379,8 @@ export const MainPage = () => {
                   onBlockContact={handleBlockContact}
                   onUpdateContact={handleContactSelect}
                   chats={chatList}
-                  blockedContacts={userProfile.blockedContacts} // pass blockedContacts here
+                  blockedContacts={userProfile.blockedContacts}
+                  onRemoveContact={handleRemoveContact}
                 />
               )
             ) : (

@@ -28,7 +28,7 @@ export const UserCard = ({
   isContactList,
   onBlockContact,
   blockedContacts,
-  title,
+  onRemoveContact,
 }) => {
   const getStatusColor = (status) => {
     switch (status) {
@@ -47,11 +47,12 @@ export const UserCard = ({
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
+  /**
   const handleStatusSelect = (status) => {
     onStatusChange(status);
     handleMenuClose();
   };
-
+   */
   const isBlocked = blockedContacts
     ? blockedContacts.map(String).includes(user._id)
     : false;
@@ -69,9 +70,6 @@ export const UserCard = ({
   // Use customMessage, or fallback to personalMessage or bio if available
   const customMessage = user.customMessage || user.personalMessage || user.bio;
 
-  console.log("blockedContacts: ", blockedContacts);
-  console.log("_id: ", user._id);
-  console.log("isBlocked: ", isBlocked);
   return (
     <Box
       sx={{
@@ -81,7 +79,6 @@ export const UserCard = ({
         padding: 1,
       }}
     >
-      {console.log("Title: ", title)}
       {/* Avatar with Status Indicator */}
       <Badge
         overlap="circular"
@@ -191,16 +188,28 @@ export const UserCard = ({
                 ))}
               </Box>
             ) : (
-              <MenuItem
-                onClick={() => {
-                  onBlockContact(user);
-                  handleMenuClose();
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography>{isBlocked ? "Unblock" : "Block"}</Typography>
-                </Box>
-              </MenuItem>
+              <Box>
+                <MenuItem
+                  onClick={() => {
+                    onBlockContact(user);
+                    handleMenuClose();
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography>{isBlocked ? "Unblock" : "Block"}</Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    onRemoveContact(user);
+                    handleMenuClose();
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography>Remove Contact</Typography>
+                  </Box>
+                </MenuItem>
+              </Box>
             )}
           </Menu>
         </Box>
@@ -310,7 +319,6 @@ UserCard.propTypes = {
     bio: PropTypes.string,
     _id: PropTypes.object,
   }).isRequired,
-  title: PropTypes.string,
   size: PropTypes.oneOf(["lg", "md"]),
   showArrow: PropTypes.bool,
   showEditIcon: PropTypes.bool,
@@ -323,6 +331,7 @@ UserCard.propTypes = {
   isLoggedInUser: PropTypes.bool,
   isContactList: PropTypes.bool,
   onBlockContact: PropTypes.func,
+  onRemoveContact: PropTypes.func,
   blockedContacts: PropTypes.array,
   // New prop for the chat object
   chat: PropTypes.shape({

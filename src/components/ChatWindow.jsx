@@ -19,6 +19,7 @@ export const ChatWindow = ({
   onBlockContact,
   chats,
   blockedContacts,
+  onRemoveContact,
 }) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -241,6 +242,7 @@ export const ChatWindow = ({
             blockedContacts={blockedContacts}
             isLoggedInUser={false}
             title="Chat Window Card"
+            onRemoveContact={onRemoveContact}
           />
           <Menu
             anchorEl={anchorEl}
@@ -402,6 +404,7 @@ ChatWindow.propTypes = {
   isMobile: PropTypes.bool.isRequired,
   onBlockContact: PropTypes.func.isRequired,
   onUpdateContact: PropTypes.func.isRequired,
+  onRemoveContact: PropTypes.func.isRequired,
   chats: PropTypes.array.isRequired,
   blockedContacts: PropTypes.array.isRequired,
 };

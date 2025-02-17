@@ -10,6 +10,7 @@ export const UserProfileBox = ({
   onStatusChange,
   onBlockContact,
   blockedContacts,
+  onRemoveContact,
 }) => {
   return (
     <Box
@@ -35,6 +36,7 @@ export const UserProfileBox = ({
         onBlockContact={onBlockContact}
         blockedContacts={blockedContacts}
         title="UserProfileBox Card"
+        onRemoveContact={onRemoveContact}
       />
     </Box>
   );
@@ -52,5 +54,6 @@ UserProfileBox.propTypes = {
   isLoggedInUser: PropTypes.bool.isRequired,
   onStatusChange: PropTypes.func.isRequired,
   onBlockContact: PropTypes.func.isRequired,
+  onRemoveContact: PropTypes.func.isRequired,
   blockedContacts: PropTypes.array,
 };
