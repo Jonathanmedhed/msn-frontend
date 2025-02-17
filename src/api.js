@@ -157,6 +157,15 @@ export const deleteUser = async (userId) => {
   }
 };
 
+export const addContact = async (userId, email) => {
+  try {
+    const response = await api.put(`/users/${userId}/add-contact`, { email });
+    return response.data;
+  } catch (error) {
+    throw Promise.reject(error);
+  }
+};
+
 /* -------------------------
    Chat API
 ------------------------- */

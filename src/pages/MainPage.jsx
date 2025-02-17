@@ -29,6 +29,7 @@ import {
   uploadPictures,
   blockContact,
   removeContact,
+  addContact,
 } from "../api";
 
 export const MainPage = () => {
@@ -105,8 +106,7 @@ export const MainPage = () => {
   const handleAddUserDialogClose = () => setIsAddUserDialogOpen(false);
   const handleSearchUserDialogOpen = () => setIsSearchUserDialogOpen(true);
   const handleSearchUserDialogClose = () => setIsSearchUserDialogOpen(false);
-  const handleAddUser = (email) =>
-    console.log("Adding user with email:", email);
+
   const handleSelectUserToChat = (contact) => {
     setSelectedContact(contact);
     handleSearchUserDialogClose();
@@ -117,10 +117,12 @@ export const MainPage = () => {
     toggleDrawer();
   };
 
+  /**
   // File upload handlers:
   const handleProfilePictureClick = () => {
     profilePictureInputRef.current && profilePictureInputRef.current.click();
   };
+ */
 
   const handleProfilePictureChange = async (event) => {
     const file = event.target.files[0];
@@ -195,6 +197,18 @@ export const MainPage = () => {
       // For example, you might update the contact object in your contactList.
     } catch (error) {
       console.error("Error removing contact:", error);
+    }
+  };
+
+  const handleAddUser = async (email) => {
+    try {
+      // Call the addContact API helper with the logged in user's ID and the contact's email
+      const data = await addContact(userProfile._id, email);
+      console.log("Contact added successfully:", data.user);
+      // Optionally update your contacts list state
+      setContactList(data.user.contacts);
+    } catch (error) {
+      console.error("Error adding contact:", error.message);
     }
   };
 
