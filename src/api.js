@@ -60,6 +60,15 @@ export const registerUser = async (userData) => {
    User Profile API
 ------------------------- */
 
+export const fetchLoggedInUser = async () => {
+  try {
+    const response = await api.get("/users/me");
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
 // Fetch the main user
 export const fetchMainUser = async () => {
   try {

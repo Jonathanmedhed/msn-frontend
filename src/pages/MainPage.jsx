@@ -30,6 +30,7 @@ import {
   blockContact,
   removeContact,
   addContact,
+  fetchLoggedInUser,
 } from "../api";
 
 export const MainPage = () => {
@@ -212,19 +213,19 @@ export const MainPage = () => {
     }
   };
 
-  // Fetch main user data and chats on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const mainUser = await fetchMainUser();
-        if (mainUser) {
+        // Fetch the currently logged-in user
+        const user = await fetchLoggedInUser();
+        if (user) {
           setIsLoggedIn(true);
         }
         // Fetch the user's chats
-        const userChats = await fetchUserChats(mainUser._id.toString());
+        const userChats = await fetchUserChats(user._id.toString());
 
         // Map chats to contacts by finding a chat that includes the contact
-        const contactsWithChats = mainUser.contacts.map((contact) => {
+        const contactsWithChats = user.contacts.map((contact) => {
           const chat = userChats.find((chat) =>
             chat.participants.some(
               (p) => p._id.toString() === contact._id.toString()
@@ -233,11 +234,11 @@ export const MainPage = () => {
           return {
             ...contact,
             chatId: chat ? chat._id : null,
-            personalMessage: contact.customMessage || "",
+            customMessage: contact.customMessage || "",
           };
         });
         setChatList(userChats);
-        setUserProfile({ ...mainUser });
+        setUserProfile({ ...user });
         setContactList(contactsWithChats);
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -298,7 +299,8 @@ export const MainPage = () => {
               );
               localStorage.setItem("token", response.token);
               localStorage.setItem("userId", response.user.id);
-              setIsLoggedIn(true); // Update login state
+              setIsLoggedIn(true);
+              // Optionally, refetch the logged-in user's data
             } catch (error) {
               console.error("Login failed:", error.message);
             }
