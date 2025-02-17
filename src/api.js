@@ -56,6 +56,15 @@ export const registerUser = async (userData) => {
   }
 };
 
+export const logoutUser = async () => {
+  try {
+    const response = await api.post("/users/logout");
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
 /* -------------------------
    User Profile API
 ------------------------- */

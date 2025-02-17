@@ -25,6 +25,7 @@ import {
   Badge,
 } from "@mui/material";
 import { TextFieldDialog } from "./TextFieldDialog";
+import { logoutUser } from "../api";
 
 export const DrawerMenu = ({
   isDrawerOpen,
@@ -121,6 +122,18 @@ export const DrawerMenu = ({
     // Update the parent's state via your API update.
     // Ensure that your updateUserProfile endpoint returns the updated images order.
     await handleFieldUpdate("pictures", newOrder);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      // Optionally, you can navigate to the login page or reload the page:
+      window.location.reload();
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   };
 
   const ProfileContent = () => (
@@ -352,7 +365,7 @@ export const DrawerMenu = ({
             )
           )}
           <Divider />
-          <ListItem button onClick={() => handleOptionClick("Logout")}>
+          <ListItem button onClick={handleLogout}>
             <ListItemIcon sx={{ color: "inherit" }}>
               <ExitToApp />
             </ListItemIcon>

@@ -1,10 +1,18 @@
 import { useContext } from "react";
-import { AppBar, Toolbar, Typography, IconButton, Button } from "@mui/material";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  IconButton,
+  Button,
+  Box,
+} from "@mui/material";
 import { Menu as MenuIcon, ArrowBack } from "@mui/icons-material";
 import PropTypes from "prop-types";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { ThemeContext } from "../ThemeContext";
+import { logoutUser } from "../api";
 
 export const AppBarComponent = ({
   //isMobile,
@@ -12,8 +20,21 @@ export const AppBarComponent = ({
   showBackButton,
   onBackClick,
   isLoggedIn,
+  onLoginClick,
+  onLogoutSuccess,
 }) => {
   const { toggleTheme, isDarkMode } = useContext(ThemeContext);
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      onLogoutSuccess();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <AppBar position="static">
@@ -33,11 +54,18 @@ export const AppBarComponent = ({
         </IconButton>
 
         {isLoggedIn ? (
-          <IconButton color="inherit" onClick={toggleSidebar} edge="end">
-            <MenuIcon />
-          </IconButton>
+          <Box>
+            <IconButton color="inherit" onClick={toggleSidebar} edge="end">
+              <MenuIcon />
+            </IconButton>
+            <Button color="inherit" onClick={handleLogout}>
+              Logout
+            </Button>
+          </Box>
         ) : (
-          <Button color="inherit">Login</Button>
+          <Button color="inherit" onClick={onLoginClick}>
+            Login
+          </Button>
         )}
       </Toolbar>
     </AppBar>
@@ -46,8 +74,9 @@ export const AppBarComponent = ({
 
 AppBarComponent.propTypes = {
   isLoggedIn: PropTypes.bool.isRequired,
-  isMobile: PropTypes.bool,
   toggleSidebar: PropTypes.func.isRequired,
   showBackButton: PropTypes.bool.isRequired,
   onBackClick: PropTypes.func.isRequired,
+  onLoginClick: PropTypes.func,
+  onLogoutSuccess: PropTypes.func,
 };

@@ -21,7 +21,6 @@ import { AddUserDialog } from "../components/AddUserDialog";
 import { Sidebar } from "../components/SideBar";
 import { DrawerMenu } from "../components/DrawerMenu";
 import {
-  fetchMainUser,
   fetchUserChats,
   loginUser,
   updateUserProfile,
@@ -32,6 +31,7 @@ import {
   addContact,
   fetchLoggedInUser,
 } from "../api";
+import LoginRegister from "./LoginRegisterPage";
 
 export const MainPage = () => {
   // State variables
@@ -213,270 +213,307 @@ export const MainPage = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Fetch the currently logged-in user
-        const user = await fetchLoggedInUser();
-        if (user) {
-          setIsLoggedIn(true);
-        }
-        // Fetch the user's chats
-        const userChats = await fetchUserChats(user._id.toString());
-
-        // Map chats to contacts by finding a chat that includes the contact
-        const contactsWithChats = user.contacts.map((contact) => {
-          const chat = userChats.find((chat) =>
-            chat.participants.some(
-              (p) => p._id.toString() === contact._id.toString()
-            )
-          );
-          return {
-            ...contact,
-            chatId: chat ? chat._id : null,
-            customMessage: contact.customMessage || "",
-          };
-        });
-        setChatList(userChats);
-        setUserProfile({ ...user });
-        setContactList(contactsWithChats);
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      } finally {
-        setLoading(false);
+  const fetchUserData = async () => {
+    try {
+      const user = await fetchLoggedInUser();
+      if (user) {
+        setIsLoggedIn(true);
       }
-    };
+      const userChats = await fetchUserChats(user._id.toString());
+      const contactsWithChats = user.contacts.map((contact) => {
+        const chat = userChats.find((chat) =>
+          chat.participants.some(
+            (p) => p._id.toString() === contact._id.toString()
+          )
+        );
+        return {
+          ...contact,
+          chatId: chat ? chat._id : null,
+          customMessage: contact.customMessage || "",
+        };
+      });
+      setChatList(userChats);
+      setUserProfile({ ...user });
+      setContactList(contactsWithChats);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchUserData();
+  const handleLoginClick = () => {
+    // We can simply render the LoginRegister page when not logged in.
+    setUserProfile(null);
+  };
+
+  const handleLogoutSuccess = () => {
+    setIsLoggedIn(false);
+    setUserProfile(null);
+  };
+  useEffect(() => {
+    if (localStorage.getItem("token")) {
+      fetchUserData();
+    } else {
+      setLoading(false);
+    }
   }, []);
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-      }}
-    >
-      <CssBaseline />
-      <AppBarComponent
-        isMobile={isMobile}
-        showBackButton={showBackButton}
-        onBackClick={handleBackClick}
-        toggleSidebar={toggleDrawer}
-        isLoggedIn={isLoggedIn}
-        blockedContacts={userProfile.blockedContacts}
-      />
-      <UserProfileBox
-        user={isMobile && selectedContact ? selectedContact : userProfile}
-        handleMenuOpen={handleMenuOpen}
-        handleEditDialogOpen={handleEditDialogOpen}
-        isMobile={isMobile}
-        isLoggedInUser={!selectedContact || !isMobile}
-        onStatusChange={handleStatusChange}
-        onBlockContact={handleBlockContact}
-        blockedContacts={userProfile.blockedContacts}
-        onRemoveContact={handleRemoveContact}
-      />
-
-      {/* Temporary Login Button */}
+  if (!isLoggedIn) {
+    return (
       <Box
         sx={{
-          position: "fixed",
-          top: 80, // Changed from 16 to 80
-          right: 16,
-          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          width: "100vw",
         }}
       >
-        <Button
-          variant="contained"
-          onClick={async () => {
-            try {
-              const response = await loginUser(
-                "mainuser@example.com",
-                "password123"
-              );
-              localStorage.setItem("token", response.token);
-              localStorage.setItem("userId", response.user.id);
-              setIsLoggedIn(true);
-              // Optionally, refetch the logged-in user's data
-            } catch (error) {
-              console.error("Login failed:", error.message);
-            }
+        <CssBaseline />
+        <LoginRegister
+          onAuthSuccess={(user) => {
+            setUserProfile(user);
+            setIsLoggedIn(true);
+            fetchUserData();
           }}
-        >
-          Temporary Login
-        </Button>
+        />
       </Box>
-
-      {/* Hidden file inputs */}
-      <input
-        type="file"
-        accept="image/*"
-        ref={profilePictureInputRef}
-        style={{ display: "none" }}
-        onChange={handleProfilePictureChange}
-      />
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        ref={picturesInputRef}
-        style={{ display: "none" }}
-        onChange={handlePicturesChange}
-      />
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
-        {["Online", "Away", "Busy", "Offline", "Blocked"].map((status) => (
-          <MenuItem key={status} onClick={() => handleStatusChange(status)}>
-            {status}
-          </MenuItem>
-        ))}
-      </Menu>
-      <EditPersonalMessageDialog
-        isEditDialogOpen={isEditDialogOpen}
-        handleEditDialogClose={handleEditDialogClose}
-        newPersonalMessage={newCustomMessage}
-        setNewPersonalMessage={setNewCustomMessage}
-        handleSavePersonalMessage={handleSavePersonalMessage}
-        handleDeletePersonalMessage={handleDeletePersonalMessage}
-      />
+    );
+  } else {
+    return (
       <Box
-        sx={{ display: "flex", flexGrow: 1, overflow: "hidden", width: "100%" }}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          width: "100vw",
+        }}
       >
-        {(!isMobile || !selectedContact) && (
-          <Sidebar
-            isMobile={isMobile}
-            searchQuery={searchQuery}
-            handleSearchChange={handleSearchChange}
-            handleMagnifierClick={handleMagnifierClick}
-            handleClearSearch={handleClearSearch}
-            filteredContacts={filteredContacts}
-            selectedContact={selectedContact}
-            handleContactSelect={handleContactSelect}
-            chatList={chatList}
-            isContactList={true}
-            blockedContacts={userProfile.blockedContacts}
-            onBlockContact={handleBlockContact}
-            onRemoveContact={handleRemoveContact}
-          />
-        )}
-        {(isMobile && selectedContact) || !isMobile ? (
-          <Box
-            sx={{
-              flexGrow: 1,
-              display: "flex",
-              flexDirection: "column",
-              width: "100%",
-              overflow: "hidden",
-            }}
-          >
-            {selectedContact ? (
-              loading ? (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "100vh",
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              ) : (
-                <ChatWindow
-                  selectedContact={selectedContact}
-                  isMobile={isMobile}
-                  onBlockContact={handleBlockContact}
-                  onUpdateContact={handleContactSelect}
-                  chats={chatList}
-                  blockedContacts={userProfile.blockedContacts}
-                  onRemoveContact={handleRemoveContact}
-                />
-              )
-            ) : (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  height: "100%",
-                  width: "100%",
-                }}
-              >
-                <h2>Select a contact to start chatting</h2>
-              </Box>
-            )}
-          </Box>
-        ) : null}
-      </Box>
-      {(!selectedContact || !isMobile) && (
+        <CssBaseline />
+        <AppBarComponent
+          isMobile={isMobile}
+          showBackButton={showBackButton}
+          onBackClick={handleBackClick}
+          toggleSidebar={toggleDrawer}
+          isLoggedIn={isLoggedIn}
+          blockedContacts={userProfile.blockedContacts}
+          onLoginClick={handleLoginClick}
+          onLogoutSuccess={handleLogoutSuccess}
+        />
+        <UserProfileBox
+          user={isMobile && selectedContact ? selectedContact : userProfile}
+          handleMenuOpen={handleMenuOpen}
+          handleEditDialogOpen={handleEditDialogOpen}
+          isMobile={isMobile}
+          isLoggedInUser={!selectedContact || !isMobile}
+          onStatusChange={handleStatusChange}
+          onBlockContact={handleBlockContact}
+          blockedContacts={userProfile.blockedContacts}
+          onRemoveContact={handleRemoveContact}
+        />
+
+        {/* Temporary Login Button */}
         <Box
           sx={{
             position: "fixed",
-            bottom: 16,
+            top: 80, // Changed from 16 to 80
             right: 16,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
-            gap: 2,
+            zIndex: 1000,
           }}
         >
-          <Fab
-            color="primary"
-            onClick={handleAddUserDialogOpen}
-            sx={{
-              display: { xs: selectedContact ? "none" : "flex", md: "flex" },
+          <Button
+            variant="contained"
+            onClick={async () => {
+              try {
+                const response = await loginUser(
+                  "mainuser@example.com",
+                  "password123"
+                );
+                localStorage.setItem("token", response.token);
+                localStorage.setItem("userId", response.user.id);
+                setIsLoggedIn(true);
+                // Optionally, refetch the logged-in user's data
+              } catch (error) {
+                console.error("Login failed:", error.message);
+              }
             }}
           >
-            <Add />
-          </Fab>
-          <Fab
-            color="secondary"
-            onClick={handleSearchUserDialogOpen}
-            sx={{
-              display: { xs: selectedContact ? "none" : "flex", md: "flex" },
-            }}
-          >
-            <Chat />
-          </Fab>
+            Temporary Login
+          </Button>
         </Box>
-      )}
-      <AddUserDialog
-        open={isAddUserDialogOpen}
-        onClose={handleAddUserDialogClose}
-        onAddUser={handleAddUser}
-      />
-      <SearchUserDialog
-        open={isSearchUserDialogOpen}
-        onClose={handleSearchUserDialogClose}
-        contacts={contactList}
-        onSelectUser={handleSelectUserToChat}
-        blockedContacts={userProfile.blockedContacts}
-      />
-      <DrawerMenu
-        isDrawerOpen={isDrawerOpen}
-        toggleDrawer={toggleDrawer}
-        isMobile={isMobile}
-        userAvatar={userProfile.profilePicture}
-        userStatus={userProfile.status}
-        userCustomMessage={userProfile.customMessage}
-        userBio={userProfile.bio}
-        userImages={userProfile.pictures}
-        handleStatusChange={handleStatusChange}
-        handleEditCustomMessage={handleEditDialogOpen}
-        handleMenuItemClick={handleMenuItemClick}
-        handleFieldUpdate={handleFieldUpdate}
-        handlePicturesClick={handlePicturesClick}
-      />
-    </Box>
-  );
+
+        {/* Hidden file inputs */}
+        <input
+          type="file"
+          accept="image/*"
+          ref={profilePictureInputRef}
+          style={{ display: "none" }}
+          onChange={handleProfilePictureChange}
+        />
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          ref={picturesInputRef}
+          style={{ display: "none" }}
+          onChange={handlePicturesChange}
+        />
+
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+        >
+          {["Online", "Away", "Busy", "Offline", "Blocked"].map((status) => (
+            <MenuItem key={status} onClick={() => handleStatusChange(status)}>
+              {status}
+            </MenuItem>
+          ))}
+        </Menu>
+        <EditPersonalMessageDialog
+          isEditDialogOpen={isEditDialogOpen}
+          handleEditDialogClose={handleEditDialogClose}
+          newPersonalMessage={newCustomMessage}
+          setNewPersonalMessage={setNewCustomMessage}
+          handleSavePersonalMessage={handleSavePersonalMessage}
+          handleDeletePersonalMessage={handleDeletePersonalMessage}
+        />
+        <Box
+          sx={{
+            display: "flex",
+            flexGrow: 1,
+            overflow: "hidden",
+            width: "100%",
+          }}
+        >
+          {(!isMobile || !selectedContact) && (
+            <Sidebar
+              isMobile={isMobile}
+              searchQuery={searchQuery}
+              handleSearchChange={handleSearchChange}
+              handleMagnifierClick={handleMagnifierClick}
+              handleClearSearch={handleClearSearch}
+              filteredContacts={filteredContacts}
+              selectedContact={selectedContact}
+              handleContactSelect={handleContactSelect}
+              chatList={chatList}
+              isContactList={true}
+              blockedContacts={userProfile.blockedContacts}
+              onBlockContact={handleBlockContact}
+              onRemoveContact={handleRemoveContact}
+            />
+          )}
+          {(isMobile && selectedContact) || !isMobile ? (
+            <Box
+              sx={{
+                flexGrow: 1,
+                display: "flex",
+                flexDirection: "column",
+                width: "100%",
+                overflow: "hidden",
+              }}
+            >
+              {selectedContact ? (
+                loading ? (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100vh",
+                    }}
+                  >
+                    <CircularProgress />
+                  </Box>
+                ) : (
+                  <ChatWindow
+                    selectedContact={selectedContact}
+                    isMobile={isMobile}
+                    onBlockContact={handleBlockContact}
+                    onUpdateContact={handleContactSelect}
+                    chats={chatList}
+                    blockedContacts={userProfile.blockedContacts}
+                    onRemoveContact={handleRemoveContact}
+                  />
+                )
+              ) : (
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    height: "100%",
+                    width: "100%",
+                  }}
+                >
+                  <h2>Select a contact to start chatting</h2>
+                </Box>
+              )}
+            </Box>
+          ) : null}
+        </Box>
+        {(!selectedContact || !isMobile) && (
+          <Box
+            sx={{
+              position: "fixed",
+              bottom: 16,
+              right: 16,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+              gap: 2,
+            }}
+          >
+            <Fab
+              color="primary"
+              onClick={handleAddUserDialogOpen}
+              sx={{
+                display: { xs: selectedContact ? "none" : "flex", md: "flex" },
+              }}
+            >
+              <Add />
+            </Fab>
+            <Fab
+              color="secondary"
+              onClick={handleSearchUserDialogOpen}
+              sx={{
+                display: { xs: selectedContact ? "none" : "flex", md: "flex" },
+              }}
+            >
+              <Chat />
+            </Fab>
+          </Box>
+        )}
+        <AddUserDialog
+          open={isAddUserDialogOpen}
+          onClose={handleAddUserDialogClose}
+          onAddUser={handleAddUser}
+        />
+        <SearchUserDialog
+          open={isSearchUserDialogOpen}
+          onClose={handleSearchUserDialogClose}
+          contacts={contactList}
+          onSelectUser={handleSelectUserToChat}
+          blockedContacts={userProfile.blockedContacts}
+        />
+        <DrawerMenu
+          isDrawerOpen={isDrawerOpen}
+          toggleDrawer={toggleDrawer}
+          isMobile={isMobile}
+          userAvatar={userProfile.profilePicture}
+          userStatus={userProfile.status}
+          userCustomMessage={userProfile.customMessage}
+          userBio={userProfile.bio}
+          userImages={userProfile.pictures}
+          handleStatusChange={handleStatusChange}
+          handleEditCustomMessage={handleEditDialogOpen}
+          handleMenuItemClick={handleMenuItemClick}
+          handleFieldUpdate={handleFieldUpdate}
+          handlePicturesClick={handlePicturesClick}
+        />
+      </Box>
+    );
+  }
 };
 
 MainPage.propTypes = {
