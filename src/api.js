@@ -71,9 +71,21 @@ export const logoutUser = async () => {
 
 export const fetchLoggedInUser = async () => {
   try {
-    const response = await api.get("/users/me");
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await api.get("/users/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
     return response.data;
   } catch (error) {
+    if (error.response && error.response.status === 403) {
+      console.warn("Token invalid or expired. Logging out...");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      window.location.reload(); // Force re-login
+    }
     return Promise.reject(error);
   }
 };

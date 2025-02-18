@@ -5,9 +5,11 @@ import { ThemeContext } from "./ThemeContext";
 import { lightTheme, darkTheme } from "./themes";
 import { MainPage } from "./pages/MainPage"; // Your main component
 import { AuthProvider } from "./context/AuthContext";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const queryClient = new QueryClient();
 
   // Toggle between light and dark themes
   const toggleTheme = () => {
@@ -24,9 +26,11 @@ function App() {
     <ThemeContext.Provider value={{ toggleTheme, isDarkMode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline /> {/* Apply baseline styles for dark mode */}
+        <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <MainPage />
         </AuthProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </ThemeContext.Provider>
   );

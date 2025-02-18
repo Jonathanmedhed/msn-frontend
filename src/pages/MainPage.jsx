@@ -285,7 +285,7 @@ export const MainPage = () => {
             isLoggedIn={isAuthenticated}
             blockedContacts={userProfile.blockedContacts}
             onLoginClick={() => {}}
-            onLogoutSuccess={logout}
+            logout={logout}
           />
           <UserProfileBox
             user={isMobile && selectedContact ? selectedContact : userProfile}

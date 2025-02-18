@@ -12,7 +12,6 @@ import PropTypes from "prop-types";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { ThemeContext } from "../ThemeContext";
-import { logoutUser } from "../api";
 
 export const AppBarComponent = ({
   //isMobile,
@@ -21,16 +20,14 @@ export const AppBarComponent = ({
   onBackClick,
   isLoggedIn,
   onLoginClick,
-  onLogoutSuccess,
+  logout,
 }) => {
   const { toggleTheme, isDarkMode } = useContext(ThemeContext);
 
   const handleLogout = async () => {
     try {
-      await logoutUser();
-      localStorage.removeItem("token");
-      localStorage.removeItem("userId");
-      onLogoutSuccess();
+      await logout();
+      window.location.reload();
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -78,5 +75,5 @@ AppBarComponent.propTypes = {
   showBackButton: PropTypes.bool.isRequired,
   onBackClick: PropTypes.func.isRequired,
   onLoginClick: PropTypes.func,
-  onLogoutSuccess: PropTypes.func,
+  logout: PropTypes.func,
 };
