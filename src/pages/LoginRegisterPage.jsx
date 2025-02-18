@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Box, Button, TextField, Typography, Link } from "@mui/material";
 import PropTypes from "prop-types";
-import { loginUser, registerUser } from "../api";
 
-export const LoginRegister = ({ onAuthSuccess }) => {
+export const LoginRegister = ({ login, register }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     name: "",
@@ -28,20 +27,15 @@ export const LoginRegister = ({ onAuthSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let response;
       if (isLogin) {
-        response = await loginUser(formData.email, formData.password);
+        await login(formData.email, formData.password);
       } else {
-        response = await registerUser({
+        await register({
           name: formData.name,
           email: formData.email,
           password: formData.password,
         });
       }
-      // Save token and user ID in localStorage
-      localStorage.setItem("token", response.token);
-      localStorage.setItem("userId", response.user.id);
-      onAuthSuccess(response.user);
     } catch (err) {
       setError(err.message);
     }
@@ -115,7 +109,8 @@ export const LoginRegister = ({ onAuthSuccess }) => {
 };
 
 LoginRegister.propTypes = {
-  onAuthSuccess: PropTypes.func.isRequired,
+  login: PropTypes.func.isRequired,
+  register: PropTypes.func.isRequired,
 };
 
 export default LoginRegister;

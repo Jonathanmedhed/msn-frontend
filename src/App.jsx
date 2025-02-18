@@ -4,6 +4,7 @@ import { ThemeProvider, CssBaseline } from "@mui/material";
 import { ThemeContext } from "./ThemeContext";
 import { lightTheme, darkTheme } from "./themes";
 import { MainPage } from "./pages/MainPage"; // Your main component
+import { AuthProvider } from "./context/AuthContext";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -23,7 +24,9 @@ function App() {
     <ThemeContext.Provider value={{ toggleTheme, isDarkMode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline /> {/* Apply baseline styles for dark mode */}
-        <MainPage />
+        <AuthProvider>
+          <MainPage />
+        </AuthProvider>
       </ThemeProvider>
     </ThemeContext.Provider>
   );

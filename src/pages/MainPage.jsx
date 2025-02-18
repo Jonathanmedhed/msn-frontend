@@ -4,11 +4,11 @@ import { useState, useRef, useMemo, useCallback } from "react";
 import {
   Box,
   CssBaseline,
+  Menu,
+  MenuItem,
   useMediaQuery,
   Fab,
   CircularProgress,
-  Menu,
-  MenuItem,
 } from "@mui/material";
 import { AppBarComponent } from "../components/AppBarComponent";
 import { UserProfileBox } from "../components/UserProfileBox";
@@ -19,7 +19,6 @@ import { SearchUserDialog } from "../components/SearchUserDialog";
 import { AddUserDialog } from "../components/AddUserDialog";
 import { Sidebar } from "../components/SideBar";
 import { DrawerMenu } from "../components/DrawerMenu";
-import LoginRegister from "./LoginRegisterPage";
 import {
   updateUserProfile,
   uploadProfilePicture,
@@ -28,24 +27,33 @@ import {
   removeContact,
   addContact,
 } from "../api";
-import { useUserData } from "../hooks/useUserData";
+import LoginRegister from "./LoginRegisterPage";
+import { useAuth } from "../context/AuthContext";
 
 export const MainPage = () => {
   // Use our custom hook to fetch user data
-  const { userProfile, contactList, chatList, loading, refetch } =
-    useUserData();
+  const {
+    userProfile,
+    contactList,
+    chatList,
+    loading,
+    login,
+    logout,
+    register,
+    refetch,
+  } = useAuth();
 
-  // Local UI state
+  // State variables
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [newCustomMessage, setNewCustomMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedContact, setSelectedContact] = useState(null);
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isSearchUserDialogOpen, setIsSearchUserDialogOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [newCustomMessage, setNewCustomMessage] = useState("");
-  const [anchorEl, setAnchorEl] = useState(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
-  // Refs for file inputs
+  // Refs for file inputs (profile picture & multiple pictures)
   const profilePictureInputRef = useRef(null);
   const picturesInputRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -56,7 +64,7 @@ export const MainPage = () => {
   // Determine if authenticated (using our custom hook's userProfile)
   const isAuthenticated = Boolean(userProfile);
 
-  // Memoized Handlers (using useCallback)
+  // Handler functions for menus and dialogs
   const handleMenuOpen = useCallback(
     (event) => setAnchorEl(event.currentTarget),
     []
@@ -244,7 +252,6 @@ export const MainPage = () => {
     [userProfile?._id, refetch]
   );
 
-  // Unified render: all hooks are called, and we conditionally render login vs main UI.
   return (
     <Box
       sx={{
@@ -254,22 +261,6 @@ export const MainPage = () => {
         width: "100vw",
       }}
     >
-      {/* Hidden file inputs */}
-      <input
-        type="file"
-        accept="image/*"
-        ref={profilePictureInputRef}
-        style={{ display: "none" }}
-        onChange={handleProfilePictureChange}
-      />
-      <input
-        type="file"
-        accept="image/*"
-        multiple
-        ref={picturesInputRef}
-        style={{ display: "none" }}
-        onChange={handlePicturesChange}
-      />
       <CssBaseline />
       {loading ? (
         <Box
@@ -283,7 +274,7 @@ export const MainPage = () => {
           <CircularProgress />
         </Box>
       ) : !isAuthenticated ? (
-        <LoginRegister onAuthSuccess={refetch} />
+        <LoginRegister login={login} register={register} />
       ) : (
         <>
           <AppBarComponent
@@ -291,26 +282,33 @@ export const MainPage = () => {
             showBackButton={showBackButton}
             onBackClick={handleBackClick}
             toggleSidebar={toggleDrawer}
-            isLoggedIn={true}
+            isLoggedIn={isAuthenticated}
             blockedContacts={userProfile.blockedContacts}
             onLoginClick={() => {}}
-            onLogoutSuccess={() => {
-              localStorage.removeItem("token");
-              localStorage.removeItem("userId");
-              window.location.reload();
-            }}
+            onLogoutSuccess={logout}
           />
           <UserProfileBox
             user={isMobile && selectedContact ? selectedContact : userProfile}
             handleMenuOpen={handleMenuOpen}
             handleEditDialogOpen={handleEditDialogOpen}
             isMobile={isMobile}
-            isLoggedInUser={!selectedContact || !isMobile}
+            isLoggedInUser={isAuthenticated}
             onStatusChange={handleStatusChange}
             onBlockContact={handleBlockContact}
             blockedContacts={userProfile.blockedContacts}
             onRemoveContact={handleRemoveContact}
           />
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
+            {["Online", "Away", "Busy", "Offline", "Blocked"].map((status) => (
+              <MenuItem key={status} onClick={() => handleStatusChange(status)}>
+                {status}
+              </MenuItem>
+            ))}
+          </Menu>
           <Sidebar
             isMobile={isMobile}
             searchQuery={searchQuery}
@@ -427,17 +425,6 @@ export const MainPage = () => {
             handleFieldUpdate={handleFieldUpdate}
             handlePicturesClick={handlePicturesClick}
           />
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            {["Online", "Away", "Busy", "Offline", "Blocked"].map((status) => (
-              <MenuItem key={status} onClick={() => handleStatusChange(status)}>
-                {status}
-              </MenuItem>
-            ))}
-          </Menu>
           <EditPersonalMessageDialog
             isEditDialogOpen={isEditDialogOpen}
             handleEditDialogClose={handleEditDialogClose}
@@ -448,6 +435,22 @@ export const MainPage = () => {
           />
         </>
       )}
+      {/* Hidden file inputs */}
+      <input
+        type="file"
+        accept="image/*"
+        ref={profilePictureInputRef}
+        style={{ display: "none" }}
+        onChange={handleProfilePictureChange}
+      />
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        ref={picturesInputRef}
+        style={{ display: "none" }}
+        onChange={handlePicturesChange}
+      />
     </Box>
   );
 };
