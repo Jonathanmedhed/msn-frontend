@@ -9,6 +9,7 @@ import {
   useMediaQuery,
   Fab,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import { AppBarComponent } from "../components/AppBarComponent";
 import { UserProfileBox } from "../components/UserProfileBox";
@@ -41,6 +42,7 @@ export const MainPage = () => {
     logout,
     register,
     refetch,
+    error,
   } = useAuth();
 
   // State variables
@@ -254,7 +256,27 @@ export const MainPage = () => {
     },
     [userProfile?._id, refetch]
   );
-
+  if (error) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          justifyContent: "center",
+          alignItems: "center",
+          p: 2,
+        }}
+      >
+        <CssBaseline />
+        <h2>Oops, an error occurred.</h2>
+        <p>{error.message || "Something went wrong."}</p>
+        <Button variant="contained" onClick={refetch}>
+          Try Again
+        </Button>
+      </Box>
+    );
+  }
   return (
     <Box
       sx={{
@@ -312,21 +334,23 @@ export const MainPage = () => {
               </MenuItem>
             ))}
           </Menu>
-          <Sidebar
-            isMobile={isMobile}
-            searchQuery={searchQuery}
-            handleSearchChange={handleSearchChange}
-            handleMagnifierClick={handleMagnifierClick}
-            handleClearSearch={handleClearSearch}
-            filteredContacts={filteredContacts}
-            selectedContact={selectedContact}
-            handleContactSelect={handleContactSelect}
-            chatList={chatList}
-            isContactList={true}
-            blockedContacts={userProfile.blockedContacts}
-            onBlockContact={handleBlockContact}
-            onRemoveContact={handleRemoveContact}
-          />
+          {(isMobile && !selectedContact) || !isMobile ? (
+            <Sidebar
+              isMobile={isMobile}
+              searchQuery={searchQuery}
+              handleSearchChange={handleSearchChange}
+              handleMagnifierClick={handleMagnifierClick}
+              handleClearSearch={handleClearSearch}
+              filteredContacts={filteredContacts}
+              selectedContact={selectedContact}
+              handleContactSelect={handleContactSelect}
+              chatList={chatList}
+              isContactList={true}
+              blockedContacts={userProfile.blockedContacts}
+              onBlockContact={handleBlockContact}
+              onRemoveContact={handleRemoveContact}
+            />
+          ) : null}
           {(isMobile && selectedContact) || !isMobile ? (
             <Box
               sx={{

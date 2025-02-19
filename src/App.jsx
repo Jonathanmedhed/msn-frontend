@@ -6,6 +6,7 @@ import { lightTheme, darkTheme } from "./themes";
 import { MainPage } from "./pages/MainPage"; // Your main component
 import { AuthProvider } from "./context/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -23,16 +24,18 @@ function App() {
   );
 
   return (
-    <ThemeContext.Provider value={{ toggleTheme, isDarkMode }}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline /> {/* Apply baseline styles for dark mode */}
-        <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <MainPage />
-        </AuthProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </ThemeContext.Provider>
+    <ErrorBoundary>
+      <ThemeContext.Provider value={{ toggleTheme, isDarkMode }}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline /> {/* Apply baseline styles for dark mode */}
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <MainPage />
+            </AuthProvider>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </ThemeContext.Provider>
+    </ErrorBoundary>
   );
 }
 
