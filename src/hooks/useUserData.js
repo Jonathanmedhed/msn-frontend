@@ -1,3 +1,4 @@
+// src/hooks/useUserData.js
 import { useQuery } from "@tanstack/react-query";
 import { fetchLoggedInUser, fetchUserChats } from "../api";
 
@@ -5,8 +6,20 @@ export const useUserData = () => {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["userData"],
     queryFn: async () => {
+      const token = localStorage.getItem("token");
+      // If no token, simply return null values
+      if (!token) {
+        return { userProfile: null, contactList: [], chatList: [] };
+      }
+
       const user = await fetchLoggedInUser();
-      if (!user) throw new Error("User not logged in");
+      // If token exists but no user is found, clear tokens and return null values
+      if (!user) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        return { userProfile: null, contactList: [], chatList: [] };
+      }
+
       const userChats = await fetchUserChats(user._id.toString());
 
       const contactsWithChats = (user.contacts || []).map((contact) => {
@@ -23,11 +36,12 @@ export const useUserData = () => {
       });
 
       return {
-        userProfile: user || null,
-        contactList: contactsWithChats || [],
-        chatList: userChats || [],
+        userProfile: user,
+        contactList: contactsWithChats,
+        chatList: userChats,
       };
     },
+    retry: false, // Disable retries so that if user is not logged in, it doesn't keep retrying
   });
 
   return {

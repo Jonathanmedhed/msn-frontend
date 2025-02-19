@@ -303,7 +303,10 @@ export const ChatWindow = memo(
                     : "Unknown sender"
                 }
                 senderAvatar={
-                  msg?.sender?.profilePicture || msg?.sender?.avatar
+                  message?.sender.pictures &&
+                  message?.sender.pictures.length > 0
+                    ? message?.sender.pictures[0]
+                    : ""
                 }
               />
             );

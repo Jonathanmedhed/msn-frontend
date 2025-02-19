@@ -441,7 +441,11 @@ export const MainPage = () => {
             isDrawerOpen={isDrawerOpen}
             toggleDrawer={toggleDrawer}
             isMobile={isMobile}
-            userAvatar={userProfile.profilePicture}
+            userAvatar={
+              userProfile.pictures && userProfile.pictures.length > 0
+                ? userProfile.pictures[0]
+                : ""
+            }
             userStatus={userProfile.status}
             userCustomMessage={userProfile.customMessage}
             userBio={userProfile.bio}
@@ -488,7 +492,7 @@ MainPage.propTypes = {
     profilePicture: PropTypes.string.isRequired,
     status: PropTypes.oneOf(["online", "offline", "busy", "blocked"])
       .isRequired,
-    personalMessage: PropTypes.string,
+    customMessage: PropTypes.string,
   }),
   contacts: PropTypes.arrayOf(
     PropTypes.shape({
@@ -496,7 +500,7 @@ MainPage.propTypes = {
       profilePicture: PropTypes.string.isRequired,
       status: PropTypes.oneOf(["online", "offline", "busy", "blocked"])
         .isRequired,
-      personalMessage: PropTypes.string,
+      customMessage: PropTypes.string,
     })
   ),
 };

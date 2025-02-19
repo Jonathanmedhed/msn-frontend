@@ -50,7 +50,7 @@ UserProfileBox.propTypes = {
     name: PropTypes.string.isRequired,
     profilePicture: PropTypes.string.isRequired,
     status: PropTypes.oneOf(["online", "away", "busy", "offline"]).isRequired,
-    personalMessage: PropTypes.string,
+    customMessage: PropTypes.string,
   }).isRequired,
   handleMenuOpen: PropTypes.func.isRequired,
   handleEditDialogOpen: PropTypes.func.isRequired,
