@@ -200,6 +200,18 @@ export const addContact = async (userId, email) => {
   }
 };
 
+export const sendFriendRequest = async (senderId, recipientEmail) => {
+  try {
+    const response = await api.post("/users/friend-request", {
+      senderId,
+      recipientEmail,
+    });
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
 /* -------------------------
    Chat API
 ------------------------- */

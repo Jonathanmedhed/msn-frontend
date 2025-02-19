@@ -6,7 +6,6 @@ import {
   Button,
   TextField,
 } from "@mui/material";
-import { user } from "../data/mockData"; // Import mock user
 
 export const EditPersonalMessageDialog = ({
   isEditDialogOpen,
@@ -21,7 +20,7 @@ export const EditPersonalMessageDialog = ({
     <DialogContent>
       <TextField
         fullWidth
-        value={newPersonalMessage || user.customMessage}
+        value={newPersonalMessage}
         onChange={(e) => setNewPersonalMessage(e.target.value)}
         placeholder="Enter personal message"
         sx={{ mt: 2 }}

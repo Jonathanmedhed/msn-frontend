@@ -1,10 +1,12 @@
 import PropTypes from "prop-types";
 import {
   Box,
+  Divider,
   IconButton,
   InputAdornment,
   List,
   ListItem,
+  ListSubheader,
   TextField,
 } from "@mui/material";
 import { UserCard } from "./UserCard";
@@ -26,6 +28,8 @@ export const Sidebar = memo(
     blockedContacts,
     onRemoveContact,
     onBlockContact,
+    requestsReceived,
+    requestsSent,
   }) => {
     return (
       <Box
@@ -69,7 +73,6 @@ export const Sidebar = memo(
             }}
           />
         </Box>
-        {console.log(filteredContacts)}
         <List sx={{ flexGrow: 1, overflowY: "auto" }}>
           {filteredContacts.map((contact, index) => {
             // Find the chat for this contact (if any)
@@ -104,6 +107,59 @@ export const Sidebar = memo(
             );
           })}
         </List>
+        <Divider />
+
+        {/* Friend Requests Received */}
+        {requestsReceived && requestsReceived.length > 0 && (
+          <>
+            <ListSubheader>Friend Requests Received</ListSubheader>
+            {requestsReceived.map((request) => {
+              const chatForRequest = chatList.find((chat) =>
+                chat.participants.some(
+                  (p) => p._id.toString() === request._id.toString()
+                )
+              );
+              return (
+                <ListItem
+                  button
+                  key={request._id}
+                  onClick={() => handleContactSelect(request)}
+                >
+                  <UserCard
+                    user={request}
+                    size="md"
+                    chat={chatForRequest}
+                    isContactList={isContactList}
+                    blockedContacts={blockedContacts}
+                    title="Friend Request Received"
+                    onRemoveContact={onRemoveContact}
+                    onBlockContact={onBlockContact}
+                  />
+                </ListItem>
+              );
+            })}
+          </>
+        )}
+        {/* Friend Requests Sent */}
+        {requestsSent && requestsSent.length > 0 && (
+          <>
+            <ListSubheader>Friend Requests Sent</ListSubheader>
+            {requestsSent.map((request) => (
+              <ListItem button key={request._id}>
+                <UserCard
+                  user={request}
+                  size="md"
+                  isContactList={isContactList}
+                  blockedContacts={blockedContacts}
+                  title="Friend Request Sent"
+                  onRemoveContact={onRemoveContact}
+                  onBlockContact={onBlockContact}
+                  sentRequest={true} // New flag for sent requests
+                />
+              </ListItem>
+            ))}
+          </>
+        )}
       </Box>
     );
   }
@@ -117,6 +173,8 @@ Sidebar.propTypes = {
   handleClearSearch: PropTypes.func.isRequired,
   isContactList: PropTypes.bool,
   blockedContacts: PropTypes.array,
+  requestsReceived: PropTypes.array,
+  requestsSent: PropTypes.array,
   onRemoveContact: PropTypes.func,
   onBlockContact: PropTypes.func,
   filteredContacts: PropTypes.arrayOf(

@@ -7,17 +7,31 @@ export const useUserData = () => {
     queryKey: ["userData"],
     queryFn: async () => {
       const token = localStorage.getItem("token");
-      // If no token, simply return null values
+      // If no token, return default values
       if (!token) {
-        return { userProfile: null, contactList: [], chatList: [] };
+        return {
+          userProfile: null,
+          contactList: [],
+          chatList: [],
+          requestsSent: [],
+          requestsReceived: [],
+        };
       }
 
       const user = await fetchLoggedInUser();
-      // If token exists but no user is found, clear tokens and return null values
+      console.log("user.friendRequestsSent: ", user.friendRequestsSent);
+      console.log("user.friendRequestsReceived: ", user.friendRequestsReceived);
+      // If token exists but no user is found, clear tokens and return default values
       if (!user) {
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
-        return { userProfile: null, contactList: [], chatList: [] };
+        return {
+          userProfile: null,
+          contactList: [],
+          chatList: [],
+          requestsSent: [],
+          requestsReceived: [],
+        };
       }
 
       const userChats = await fetchUserChats(user._id.toString());
@@ -32,7 +46,7 @@ export const useUserData = () => {
           ...contact,
           chatId: chat ? chat._id : null,
           customMessage: contact.customMessage || "",
-          pictures: contact.pictures || [], // Ensure images array is included
+          pictures: contact.pictures || [],
         };
       });
 
@@ -40,15 +54,20 @@ export const useUserData = () => {
         userProfile: user,
         contactList: contactsWithChats,
         chatList: userChats,
+        // Return friend requests as full user objects (assuming they're populated in the API response)
+        requestsSent: user.friendRequestsSent || [],
+        requestsReceived: user.friendRequestsReceived || [],
       };
     },
-    retry: false, // Disable retries so that if user is not logged in, it doesn't keep retrying
+    retry: false, // Disable retries if the user isn't logged in
   });
 
   return {
     userProfile: data?.userProfile || null,
     contactList: data?.contactList || [],
     chatList: data?.chatList || [],
+    requestsSent: data?.requestsSent || [],
+    requestsReceived: data?.requestsReceived || [],
     loading: isLoading,
     error,
     refetch,

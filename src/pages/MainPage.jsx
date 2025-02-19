@@ -26,7 +26,7 @@ import {
   uploadPictures,
   blockContact,
   removeContact,
-  addContact,
+  sendFriendRequest,
 } from "../api";
 import LoginRegister from "./LoginRegisterPage";
 import { useAuth } from "../context/AuthContext";
@@ -43,7 +43,12 @@ export const MainPage = () => {
     register,
     refetch,
     error,
+    requestsSent,
+    requestsReceived,
   } = useAuth();
+
+  console.log("requestsSent Main Page", requestsSent);
+  console.log("requestsReceived Main Page", requestsReceived);
 
   // State variables
   const [anchorEl, setAnchorEl] = useState(null);
@@ -245,17 +250,29 @@ export const MainPage = () => {
     [userProfile?._id, refetch]
   );
 
-  const handleAddUser = useCallback(
+  const handleSendFriendRequest = useCallback(
     async (email) => {
       try {
-        await addContact(userProfile._id, email);
+        await sendFriendRequest(userProfile._id, email);
         refetch();
       } catch (error) {
-        console.error("Error adding contact:", error.message);
+        console.error("Error sending friend request:", error.message);
       }
     },
     [userProfile?._id, refetch]
   );
+
+  const handleAddUser = useCallback(
+    async (email) => {
+      try {
+        await handleSendFriendRequest(email);
+      } catch (error) {
+        console.error("Error sending friend request:", error.message);
+      }
+    },
+    [handleSendFriendRequest]
+  );
+
   if (error) {
     return (
       <Box
@@ -349,6 +366,8 @@ export const MainPage = () => {
               blockedContacts={userProfile.blockedContacts}
               onBlockContact={handleBlockContact}
               onRemoveContact={handleRemoveContact}
+              requestsReceived={requestsReceived}
+              requestsSent={requestsSent}
             />
           ) : null}
           {(isMobile && selectedContact) || !isMobile ? (
@@ -428,7 +447,7 @@ export const MainPage = () => {
           <AddUserDialog
             open={isAddUserDialogOpen}
             onClose={handleAddUserDialogClose}
-            onAddUser={handleAddUser}
+            onAddUser={handleAddUser} // This now sends a friend request
           />
           <SearchUserDialog
             open={isSearchUserDialogOpen}

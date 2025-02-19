@@ -7,8 +7,16 @@ import PropTypes from "prop-types";
 export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const { userProfile, contactList, chatList, loading, error, refetch } =
-    useUserData();
+  const {
+    userProfile,
+    contactList,
+    chatList,
+    loading,
+    error,
+    requestsSent,
+    requestsReceived,
+    refetch,
+  } = useUserData();
 
   // Login function: calls API, stores token, then refetches user data
   const login = async (email, password) => {
@@ -43,6 +51,8 @@ export const AuthProvider = ({ children }) => {
     contactList,
     chatList,
     loading,
+    requestsSent,
+    requestsReceived,
     error,
     refetch,
     login,

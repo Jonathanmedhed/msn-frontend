@@ -29,6 +29,7 @@ export const UserCard = memo(
     onBlockContact,
     blockedContacts,
     onRemoveContact,
+    sentRequest,
   }) => {
     const getStatusColor = (status) => {
       switch (status) {
@@ -67,6 +68,9 @@ export const UserCard = memo(
     // Use the first picture in user.pictures if available, otherwise use a default image.
     const avatarSrc =
       user.pictures && user.pictures.length > 0 ? user.pictures[0] : "";
+
+    // For sent requests, display the email instead of customMessage.
+    const displayText = sentRequest ? user.email : user.customMessage;
 
     return (
       <Box
@@ -273,7 +277,7 @@ export const UserCard = memo(
                   sx={{ overflow: "hidden", textOverflow: "ellipsis" }}
                   noWrap
                 >
-                  {user.customMessage}
+                  {displayText}
                 </Typography>
                 {showEditIcon && (
                   <IconButton
@@ -295,8 +299,7 @@ export const UserCard = memo(
 UserCard.propTypes = {
   user: PropTypes.shape({
     name: PropTypes.string.isRequired,
-    // profilePicture is now optional since we rely on user.pictures instead.
-    profilePicture: PropTypes.string,
+    email: PropTypes.string.isRequired,
     status: PropTypes.oneOf(["online", "offline", "busy", "blocked"])
       .isRequired,
     customMessage: PropTypes.string,
@@ -318,6 +321,7 @@ UserCard.propTypes = {
   onBlockContact: PropTypes.func,
   onRemoveContact: PropTypes.func,
   blockedContacts: PropTypes.array,
+  sentRequest: PropTypes.bool,
   chat: PropTypes.shape({
     _id: PropTypes.string.isRequired,
     participants: PropTypes.arrayOf(
