@@ -208,12 +208,15 @@ export const MainPage = () => {
   const showBackButton = isMobile && selectedContact !== null;
   const handleBackClick = useCallback(() => setSelectedContact(null), []);
 
+  // Memoize the search query itself
+  const memoizedSearchQuery = useMemo(() => searchQuery, [searchQuery]);
+
   const filteredContacts = useMemo(
     () =>
       contactList.filter((contact) =>
-        contact.name.toLowerCase().includes(searchQuery.toLowerCase())
+        contact.name.toLowerCase().includes(memoizedSearchQuery.toLowerCase())
       ),
-    [contactList, searchQuery]
+    [contactList, memoizedSearchQuery]
   );
 
   const handleBlockContact = useCallback(
@@ -456,7 +459,7 @@ export const MainPage = () => {
 };
 
 MainPage.propTypes = {
-  user: PropTypes.shape({
+  userProfile: PropTypes.shape({
     name: PropTypes.string.isRequired,
     profilePicture: PropTypes.string.isRequired,
     status: PropTypes.oneOf(["online", "offline", "busy", "blocked"])
