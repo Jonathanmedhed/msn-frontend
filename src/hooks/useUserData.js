@@ -32,6 +32,7 @@ export const useUserData = () => {
           ...contact,
           chatId: chat ? chat._id : null,
           customMessage: contact.customMessage || "",
+          pictures: contact.pictures || [], // Ensure images array is included
         };
       });
 

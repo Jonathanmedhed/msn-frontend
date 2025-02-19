@@ -178,7 +178,9 @@ export const ChatWindow = memo(
         // Replace temporary message
         setMessages((prev) =>
           prev.map((msg) =>
-            msg._id === tempMessageId ? { ...sentMessage, status: "sent" } : msg
+            msg._id === tempMessageId
+              ? { ...sentMessage.message, status: "sent" }
+              : msg
           )
         );
 
@@ -303,10 +305,9 @@ export const ChatWindow = memo(
                     : "Unknown sender"
                 }
                 senderAvatar={
-                  message?.sender.pictures &&
-                  message?.sender.pictures.length > 0
-                    ? message?.sender.pictures[0]
-                    : ""
+                  msg?.sender.pictures && msg?.sender.pictures.length > 0
+                    ? msg?.sender.pictures[0]
+                    : "https://via.placeholder.com/150"
                 }
               />
             );

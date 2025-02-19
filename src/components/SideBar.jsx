@@ -69,6 +69,7 @@ export const Sidebar = memo(
             }}
           />
         </Box>
+        {console.log(filteredContacts)}
         <List sx={{ flexGrow: 1, overflowY: "auto" }}>
           {filteredContacts.map((contact, index) => {
             // Find the chat for this contact (if any)
