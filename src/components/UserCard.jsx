@@ -10,8 +10,11 @@ import {
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
 import BlockIcon from "@mui/icons-material/Block";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
 import PropTypes from "prop-types";
 import { Message } from "./Message";
+import { ConfirmationDialog } from "./ConfirmationDialog";
 
 export const UserCard = memo(
   ({
@@ -30,6 +33,10 @@ export const UserCard = memo(
     blockedContacts,
     onRemoveContact,
     sentRequest,
+    receivedRequest,
+    onAcceptRequest,
+    onRejectRequest,
+    onCancelRequest,
   }) => {
     const getStatusColor = (status) => {
       switch (status) {
@@ -48,6 +55,12 @@ export const UserCard = memo(
     const handleMenuClose = () => {
       setAnchorEl(null);
     };
+    const [confirmDialog, setConfirmDialog] = useState({
+      open: false,
+      title: "",
+      message: "",
+      onConfirm: null,
+    });
 
     // Check if the user is blocked by looking for their _id in blockedContacts
     const isBlocked = blockedContacts
@@ -72,6 +85,50 @@ export const UserCard = memo(
     // For sent requests, display the email instead of customMessage.
     const displayText = sentRequest ? user.email : user.customMessage;
 
+    const openConfirmDialog = (title, message, onConfirm) => {
+      setConfirmDialog({
+        open: true,
+        title,
+        message,
+        onConfirm: () => {
+          onConfirm();
+          setConfirmDialog((prev) => ({ ...prev, open: false }));
+        },
+      });
+    };
+
+    const handleAcceptClick = (e) => {
+      e.stopPropagation();
+      openConfirmDialog(
+        "Accept Friend Request",
+        `Accept friend request from ${user.name}?`,
+        () => {
+          if (onAcceptRequest) onAcceptRequest(user);
+        }
+      );
+    };
+
+    const handleRejectClick = (e) => {
+      e.stopPropagation();
+      openConfirmDialog(
+        "Reject Friend Request",
+        `Reject friend request from ${user.name}?`,
+        () => {
+          if (onRejectRequest) onRejectRequest(user);
+        }
+      );
+    };
+
+    const handleCancelClick = () => {
+      openConfirmDialog(
+        "Cancel Friend Request",
+        `Cancel friend request sent to ${user.name}?`,
+        () => {
+          if (onCancelRequest) onCancelRequest(user);
+        }
+      );
+    };
+
     return (
       <Box
         sx={{
@@ -81,6 +138,16 @@ export const UserCard = memo(
           padding: 1,
         }}
       >
+        <ConfirmationDialog
+          open={confirmDialog.open}
+          onClose={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          onConfirm={
+            confirmDialog.onConfirm ||
+            (() => setConfirmDialog((prev) => ({ ...prev, open: false })))
+          }
+        />
         {/* Avatar with Status Indicator */}
         <Badge
           overlap="circular"
@@ -233,7 +300,7 @@ export const UserCard = memo(
               <Typography variant="h6" noWrap>
                 {user.name}
               </Typography>
-              {user.customMessage && (
+              {(user.customMessage || sentRequest) && (
                 <Typography
                   variant="body2"
                   color="textSecondary"
@@ -245,7 +312,7 @@ export const UserCard = memo(
                     pt: 0.5,
                   }}
                 >
-                  {user.customMessage}
+                  {displayText}
                 </Typography>
               )}
             </Box>
@@ -269,7 +336,7 @@ export const UserCard = memo(
                 {user.status}
               </Typography>
             )}
-            {alwaysShowPersonalMessage && (
+            {(alwaysShowPersonalMessage || sentRequest) && (
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <Typography
                   variant="body2"
@@ -289,6 +356,28 @@ export const UserCard = memo(
                 )}
               </Box>
             )}
+          </Box>
+        )}
+        {/* Friend Request Actions */}
+        {receivedRequest && (
+          <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
+            <IconButton
+              onClick={handleAcceptClick}
+              size="small"
+              color="primary"
+            >
+              <CheckIcon />
+            </IconButton>
+            <IconButton onClick={handleRejectClick} size="small" color="error">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        )}
+        {sentRequest && (
+          <Box sx={{ ml: "auto" }}>
+            <IconButton onClick={handleCancelClick} size="small" color="error">
+              <CloseIcon />
+            </IconButton>
           </Box>
         )}
       </Box>
@@ -320,8 +409,12 @@ UserCard.propTypes = {
   isContactList: PropTypes.bool,
   onBlockContact: PropTypes.func,
   onRemoveContact: PropTypes.func,
+  onAcceptRequest: PropTypes.func,
+  onRejectRequest: PropTypes.func,
+  onCancelRequest: PropTypes.func,
   blockedContacts: PropTypes.array,
   sentRequest: PropTypes.bool,
+  receivedRequest: PropTypes.bool,
   chat: PropTypes.shape({
     _id: PropTypes.string.isRequired,
     participants: PropTypes.arrayOf(

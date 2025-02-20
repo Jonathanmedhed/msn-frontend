@@ -27,6 +27,9 @@ import {
   blockContact,
   removeContact,
   sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  cancelFriendRequest,
 } from "../api";
 import LoginRegister from "./LoginRegisterPage";
 import { useAuth } from "../context/AuthContext";
@@ -273,6 +276,33 @@ export const MainPage = () => {
     [handleSendFriendRequest]
   );
 
+  const handleAcceptRequest = async (user) => {
+    try {
+      await acceptFriendRequest(user._id);
+      refetch();
+    } catch (error) {
+      console.error("Error accepting friend request:", error.message);
+    }
+  };
+
+  const handleRejectRequest = async (user) => {
+    try {
+      await rejectFriendRequest(user._id);
+      refetch();
+    } catch (error) {
+      console.error("Error rejecting friend request:", error.message);
+    }
+  };
+
+  const handleCancelRequest = async (user) => {
+    try {
+      await cancelFriendRequest(user._id);
+      refetch();
+    } catch (error) {
+      console.error("Error canceling friend request:", error.message);
+    }
+  };
+
   if (error) {
     return (
       <Box
@@ -368,6 +398,9 @@ export const MainPage = () => {
               onRemoveContact={handleRemoveContact}
               requestsReceived={requestsReceived}
               requestsSent={requestsSent}
+              onAcceptRequest={handleAcceptRequest}
+              onRejectRequest={handleRejectRequest}
+              onCancelRequest={handleCancelRequest}
             />
           ) : null}
           {(isMobile && selectedContact) || !isMobile ? (

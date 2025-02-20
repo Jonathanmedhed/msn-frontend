@@ -30,6 +30,9 @@ export const Sidebar = memo(
     onBlockContact,
     requestsReceived,
     requestsSent,
+    onAcceptRequest,
+    onRejectRequest,
+    onCancelRequest,
   }) => {
     return (
       <Box
@@ -123,7 +126,7 @@ export const Sidebar = memo(
                 <ListItem
                   button
                   key={request._id}
-                  onClick={() => handleContactSelect(request)}
+                  //onClick={() => handleContactSelect(request)}
                 >
                   <UserCard
                     user={request}
@@ -134,6 +137,10 @@ export const Sidebar = memo(
                     title="Friend Request Received"
                     onRemoveContact={onRemoveContact}
                     onBlockContact={onBlockContact}
+                    receivedRequest={true}
+                    onAcceptRequest={onAcceptRequest}
+                    onRejectRequest={onRejectRequest}
+                    onCancelRequest={onCancelRequest}
                   />
                 </ListItem>
               );
@@ -154,7 +161,10 @@ export const Sidebar = memo(
                   title="Friend Request Sent"
                   onRemoveContact={onRemoveContact}
                   onBlockContact={onBlockContact}
-                  sentRequest={true} // New flag for sent requests
+                  sentRequest={true}
+                  onAcceptRequest={onAcceptRequest}
+                  onRejectRequest={onRejectRequest}
+                  onCancelRequest={onCancelRequest}
                 />
               </ListItem>
             ))}
@@ -177,6 +187,9 @@ Sidebar.propTypes = {
   requestsSent: PropTypes.array,
   onRemoveContact: PropTypes.func,
   onBlockContact: PropTypes.func,
+  onAcceptRequest: PropTypes.func,
+  onRejectRequest: PropTypes.func,
+  onCancelRequest: PropTypes.func,
   filteredContacts: PropTypes.arrayOf(
     PropTypes.shape({
       _id: PropTypes.string.isRequired,

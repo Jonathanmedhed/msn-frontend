@@ -200,11 +200,47 @@ export const addContact = async (userId, email) => {
   }
 };
 
+/* -------------------------
+   Friend Requests
+------------------------- */
 export const sendFriendRequest = async (senderId, recipientEmail) => {
   try {
     const response = await api.post("/users/friend-request", {
       senderId,
       recipientEmail,
+    });
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const acceptFriendRequest = async (senderId) => {
+  try {
+    const response = await api.post("/users/friend-request/accept", {
+      senderId,
+    });
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const rejectFriendRequest = async (senderId) => {
+  try {
+    const response = await api.post("/users/friend-request/reject", {
+      senderId,
+    });
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
+export const cancelFriendRequest = async (recipientId) => {
+  try {
+    const response = await api.post("/users/friend-request/cancel", {
+      recipientId,
     });
     return response.data;
   } catch (error) {
