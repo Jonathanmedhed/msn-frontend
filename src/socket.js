@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const socket = io("http://localhost:5000", {
+export const socket = io("http://localhost:5000", {
   withCredentials: true, // ✅ Important for CORS
   transports: ["websocket", "polling"], // ✅ Ensures compatibility
 });
@@ -13,4 +13,6 @@ socket.on("receiveMessage", (message) => {
   console.log("New message received:", message);
 });
 
-export default socket;
+socket.on("disconnect", () => {
+  console.log("Disconnected from server");
+});

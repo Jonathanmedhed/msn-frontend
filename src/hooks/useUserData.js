@@ -19,9 +19,7 @@ export const useUserData = () => {
       }
 
       const user = await fetchLoggedInUser();
-      console.log("user.friendRequestsSent: ", user.friendRequestsSent);
-      console.log("user.friendRequestsReceived: ", user.friendRequestsReceived);
-      // If token exists but no user is found, clear tokens and return default values
+      // If no user is returned, clear tokens and return defaults.
       if (!user) {
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
@@ -54,12 +52,20 @@ export const useUserData = () => {
         userProfile: user,
         contactList: contactsWithChats,
         chatList: userChats,
-        // Return friend requests as full user objects (assuming they're populated in the API response)
         requestsSent: user.friendRequestsSent || [],
         requestsReceived: user.friendRequestsReceived || [],
       };
     },
-    retry: false, // Disable retries if the user isn't logged in
+    retry: false, // Don't keep retrying if not logged in
+    onError: (err) => {
+      // If error indicates the user is not found, clear tokens and reload
+      if (err.response && err.response.status === 404) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        // Optionally, you can use a navigation method instead of reload
+        window.location.reload();
+      }
+    },
   });
 
   return {

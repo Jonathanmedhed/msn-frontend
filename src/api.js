@@ -65,6 +65,30 @@ export const logoutUser = async () => {
   }
 };
 
+export const changePassword = async ({ currentPassword, newPassword }) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    throw new Error("User not authenticated");
+  }
+
+  const response = await api.post(
+    "/auth/change-password",
+    { currentPassword, newPassword },
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  // Since our backend always returns a 200 with a success flag, check that flag:
+  if (!response.data.success) {
+    throw new Error(response.data.message);
+  }
+  return response.data;
+};
+
 /* -------------------------
    User Profile API
 ------------------------- */
@@ -98,7 +122,6 @@ export const fetchLoggedInUser = async () => {
 export const fetchMainUser = async () => {
   try {
     const response = await api.get("/users/main-user");
-    console.log(response.data);
     return response.data;
   } catch (error) {
     return Promise.reject(error);

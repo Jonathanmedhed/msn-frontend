@@ -50,9 +50,6 @@ export const MainPage = () => {
     requestsReceived,
   } = useAuth();
 
-  console.log("requestsSent Main Page", requestsSent);
-  console.log("requestsReceived Main Page", requestsReceived);
-
   // State variables
   const [anchorEl, setAnchorEl] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
