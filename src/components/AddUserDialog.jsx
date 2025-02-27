@@ -7,10 +7,12 @@ import {
   TextField,
   Button,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import PropTypes from "prop-types";
 
 export const AddUserDialog = ({ open, onClose, onAddUser }) => {
   const [email, setEmail] = useState("");
+  const { t } = useTranslation();
 
   const handleAddUser = () => {
     onAddUser(email); // Call the parent function to add the user
@@ -33,7 +35,7 @@ export const AddUserDialog = ({ open, onClose, onAddUser }) => {
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button onClick={handleAddUser} color="primary">
-          Add
+          {t("add")}
         </Button>
       </DialogActions>
     </Dialog>

@@ -7,6 +7,7 @@ import { MainPage } from "./pages/MainPage"; // Your main component
 import { AuthProvider } from "./context/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "./components/ErrorBoundary";
+import "../i18n";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);

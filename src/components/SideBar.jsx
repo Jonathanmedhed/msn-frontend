@@ -12,6 +12,7 @@ import {
 import { UserCard } from "./UserCard";
 import { Search as SearchIcon, Close as CloseIcon } from "@mui/icons-material";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 
 export const Sidebar = memo(
   ({
@@ -34,6 +35,7 @@ export const Sidebar = memo(
     onRejectRequest,
     onCancelRequest,
   }) => {
+    const { t } = useTranslation();
     return (
       <Box
         sx={{
@@ -49,7 +51,7 @@ export const Sidebar = memo(
         <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
           <TextField
             fullWidth
-            placeholder="Search"
+            placeholder={t("search")}
             size="small"
             value={searchQuery}
             onChange={handleSearchChange}
@@ -150,7 +152,7 @@ export const Sidebar = memo(
         {/* Friend Requests Sent */}
         {requestsSent && requestsSent.length > 0 && (
           <>
-            <ListSubheader>Friend Requests Sent</ListSubheader>
+            <ListSubheader>{t("friendRequestsSent")}</ListSubheader>
             {requestsSent.map((request) => (
               <ListItem button key={request._id}>
                 <UserCard

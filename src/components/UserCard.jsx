@@ -15,6 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import PropTypes from "prop-types";
 import { Message } from "./Message";
 import { ConfirmationDialog } from "./ConfirmationDialog";
+import { useTranslation } from "react-i18next";
 
 export const UserCard = memo(
   ({
@@ -38,6 +39,8 @@ export const UserCard = memo(
     onRejectRequest,
     onCancelRequest,
   }) => {
+    const { t } = useTranslation();
+
     const getStatusColor = (status) => {
       switch (status) {
         case "online":
@@ -100,8 +103,8 @@ export const UserCard = memo(
     const handleAcceptClick = (e) => {
       e.stopPropagation();
       openConfirmDialog(
-        "Accept Friend Request",
-        `Accept friend request from ${user.name}?`,
+        t("acceptFriendRequest"),
+        `${t("acceptFriendRequestFrom")} ${user.name}?`,
         () => {
           if (onAcceptRequest) onAcceptRequest(user);
         }
@@ -111,8 +114,8 @@ export const UserCard = memo(
     const handleRejectClick = (e) => {
       e.stopPropagation();
       openConfirmDialog(
-        "Reject Friend Request",
-        `Reject friend request from ${user.name}?`,
+        t("rejectFriendRequest"),
+        `${t("rejectFriendRequestFrom")} ${user.name}?`,
         () => {
           if (onRejectRequest) onRejectRequest(user);
         }
@@ -121,8 +124,8 @@ export const UserCard = memo(
 
     const handleCancelClick = () => {
       openConfirmDialog(
-        "Cancel Friend Request",
-        `Cancel friend request sent to ${user.name}?`,
+        t("cancelFriendRequest"),
+        `${t("cancelFriendRequestSentTo")} ${user.name}?`,
         () => {
           if (onCancelRequest) onCancelRequest(user);
         }
@@ -224,33 +227,40 @@ export const UserCard = memo(
             >
               {isLoggedInUser ? (
                 <Box>
-                  {["Online", "Away", "Busy", "Offline"].map((status) => (
+                  {["Online", "Away", "Busy", "Offline"].map((status, i) => (
                     <MenuItem
-                      key={status}
+                      key={i}
                       onClick={() => {
                         onStatusChange(status);
                         handleMenuClose();
                       }}
+                      sx={{ minWidth: 150 }}
                     >
                       <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          width: "100%",
+                        }}
                       >
                         <Box
                           sx={{
-                            width: 12,
-                            height: 12,
+                            width: 10,
+                            height: 10,
                             borderRadius: "50%",
-                            backgroundColor:
-                              status === "Online"
-                                ? "green"
-                                : status === "Away"
-                                ? "orange"
-                                : status === "Busy"
-                                ? "red"
-                                : "gray",
+                            backgroundColor: getStatusColor(status),
+                            mr: 2,
                           }}
                         />
-                        <Typography>{status}</Typography>
+                        <Typography>
+                          {i === 0
+                            ? t("online")
+                            : i === 1
+                            ? t("away")
+                            : i === 2
+                            ? t("busy")
+                            : t("offline")}
+                        </Typography>
                       </Box>
                     </MenuItem>
                   ))}
@@ -264,7 +274,9 @@ export const UserCard = memo(
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography>{isBlocked ? "Unblock" : "Block"}</Typography>
+                      <Typography>
+                        {isBlocked ? t("unblock") : t("block")}
+                      </Typography>
                     </Box>
                   </MenuItem>
                   <MenuItem
@@ -274,7 +286,7 @@ export const UserCard = memo(
                     }}
                   >
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Typography>Remove Contact</Typography>
+                      <Typography>{t("removeContact")}</Typography>
                     </Box>
                   </MenuItem>
                 </Box>

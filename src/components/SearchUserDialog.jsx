@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import PropTypes from "prop-types";
 import { UserCard } from "./UserCard"; // Import the UserCard component
+import { useTranslation } from "react-i18next";
 
 export const SearchUserDialog = ({
   open,
@@ -20,6 +21,8 @@ export const SearchUserDialog = ({
   onSelectUser,
   blockedContacts,
 }) => {
+  const { t } = useTranslation();
+
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter contacts based on search query
@@ -29,7 +32,7 @@ export const SearchUserDialog = ({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Start Chat</DialogTitle>
+      <DialogTitle>{t("startChat")}</DialogTitle>
       <DialogContent>
         {/* List of Contacts */}
         <Box
@@ -68,14 +71,14 @@ export const SearchUserDialog = ({
         {/* Search Box at the Bottom */}
         <TextField
           fullWidth
-          label="Search"
+          label={t("search")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           sx={{ mt: 2 }}
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose}>{t("cancel")}</Button>
       </DialogActions>
     </Dialog>
   );

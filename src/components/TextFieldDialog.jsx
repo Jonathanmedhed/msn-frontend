@@ -8,6 +8,7 @@ import {
   DialogActions,
   Button,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 export const TextFieldDialog = ({
   open,
@@ -17,6 +18,8 @@ export const TextFieldDialog = ({
   currentValue,
   onSave,
 }) => {
+  const { t } = useTranslation();
+
   const [value, setValue] = useState(currentValue || "");
 
   // Update local state if currentValue changes
@@ -49,8 +52,8 @@ export const TextFieldDialog = ({
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave}>Save</Button>
+        <Button onClick={onClose}>{t("cancel")}</Button>
+        <Button onClick={handleSave}>{t("save")}</Button>
       </DialogActions>
     </Dialog>
   );

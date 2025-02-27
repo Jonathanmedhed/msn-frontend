@@ -12,6 +12,7 @@ import { io } from "socket.io-client";
 import { sendMessage, fetchChatMessages, createChat } from "../api";
 import { isValidObjectId } from "../utils/validation";
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 
 export const ChatWindow = memo(
   ({
@@ -23,6 +24,8 @@ export const ChatWindow = memo(
     blockedContacts,
     onRemoveContact,
   }) => {
+    const { t } = useTranslation();
+
     const [message, setMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
@@ -133,12 +136,12 @@ export const ChatWindow = memo(
         // Validate current user ID
         const currentUserId = localStorage.getItem("userId");
         if (!currentUserId) {
-          throw new Error("User not authenticated");
+          throw new Error(t("userNotAuthenticated"));
         }
 
         // Validate contact ID
         if (!selectedContact?._id) {
-          throw new Error("Invalid contact selected");
+          throw new Error(t("invalidContactSelected"));
         }
 
         // Optimistic update
@@ -160,7 +163,7 @@ export const ChatWindow = memo(
             participantIds.length !== 2 ||
             !participantIds.every((id) => isValidObjectId(id))
           ) {
-            throw new Error("Invalid participant IDs for chat creation");
+            throw new Error(t("invalidParticipantIDsForChatCreation"));
           }
           const newChat = await createChat(participantIds);
           chatId = newChat._id;
@@ -302,7 +305,7 @@ export const ChatWindow = memo(
                 senderName={
                   msg.sender
                     ? msg.sender.name || msg.sender.username
-                    : "Unknown sender"
+                    : t("unknownSender")
                 }
                 senderAvatar={
                   msg?.sender.pictures && msg?.sender.pictures.length > 0
@@ -360,7 +363,7 @@ export const ChatWindow = memo(
             fullWidth
             multiline
             maxRows={4}
-            placeholder="Type a message..."
+            placeholder={t("typeAmessage")}
             size="small"
             value={message}
             onChange={(e) => setMessage(e.target.value)}

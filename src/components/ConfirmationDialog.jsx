@@ -7,6 +7,7 @@ import {
   DialogActions,
   Button,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 
 export const ConfirmationDialog = ({
   open,
@@ -15,8 +16,8 @@ export const ConfirmationDialog = ({
   message,
   onConfirm,
 }) => {
-  // Optionally, you could manage local state here if needed.
-  // For now, it's a simple presentation component.
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>{title}</DialogTitle>
@@ -26,7 +27,7 @@ export const ConfirmationDialog = ({
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button onClick={onConfirm} color="primary">
-          Confirm
+          {t("confirm")}
         </Button>
       </DialogActions>
     </Dialog>

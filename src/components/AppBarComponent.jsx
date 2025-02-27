@@ -12,6 +12,7 @@ import PropTypes from "prop-types";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { ThemeContext } from "../ThemeContext";
+import { useTranslation } from "react-i18next";
 
 export const AppBarComponent = ({
   //isMobile,
@@ -22,6 +23,7 @@ export const AppBarComponent = ({
   onLoginClick,
   logout,
 }) => {
+  const { t } = useTranslation();
   const { toggleTheme, isDarkMode } = useContext(ThemeContext);
 
   const handleLogout = async () => {
@@ -56,12 +58,12 @@ export const AppBarComponent = ({
               <MenuIcon />
             </IconButton>
             <Button color="inherit" onClick={handleLogout}>
-              Logout
+              {t("logout")}
             </Button>
           </Box>
         ) : (
           <Button color="inherit" onClick={onLoginClick}>
-            Login
+            {t("login")}
           </Button>
         )}
       </Toolbar>

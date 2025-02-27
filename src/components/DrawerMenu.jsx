@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { useTranslation } from "react-i18next";
 import { useTheme } from "@mui/material/styles";
 import {
   ArrowBack,
@@ -37,6 +38,9 @@ import {
 } from "@mui/material";
 import { TextFieldDialog } from "./TextFieldDialog";
 import { logoutUser, changePassword } from "../api";
+import { ThemeContext } from "../ThemeContext";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
 
 export const DrawerMenu = ({
   isDrawerOpen,
@@ -51,7 +55,11 @@ export const DrawerMenu = ({
   handleFieldUpdate,
   handlePicturesClick,
 }) => {
+  const { i18n, t } = useTranslation();
+
   const theme = useTheme();
+  const { toggleTheme, isDarkMode } = useContext(ThemeContext);
+
   const [selectedOption, setSelectedOption] = useState(null);
   const [statusAnchorEl, setStatusAnchorEl] = useState(null);
   // State for generic dialog (for editing fields like bio, message)
@@ -63,8 +71,6 @@ export const DrawerMenu = ({
   });
   // Local state to manage the order of images
   const [orderedImages, setOrderedImages] = useState(userImages || []);
-  // State for language preference ("english" or "spanish")
-  const [language, setLanguage] = useState("english");
   // State for change password dialog
   const [openChangePasswordDialog, setOpenChangePasswordDialog] =
     useState(false);
@@ -161,21 +167,21 @@ export const DrawerMenu = ({
 
   // Handler for changing language switch value
   const handleLanguageChange = (event) => {
-    setLanguage(event.target.checked ? "spanish" : "english");
+    // If switch is checked, set to Spanish, else English.
+    const newLang = event.target.checked ? "es" : "en";
+    i18n.changeLanguage(newLang);
   };
 
   // Handler for submitting a password change
   const handleChangePasswordSubmit = async (data) => {
     try {
       const result = await changePassword(data);
-      console.log("Password changed successfully:", result);
       setNotification({
         open: true,
         message: result.message, // "Password changed successfully."
         severity: "success",
       });
     } catch (error) {
-      console.error("Error changing password:", error.message);
       setNotification({
         open: true,
         message: error.message, // "Password incorrect." or other friendly message
@@ -198,7 +204,7 @@ export const DrawerMenu = ({
 
     const handleSubmit = () => {
       if (newPassword !== repeatPassword) {
-        setError("New password and repeat password do not match");
+        setError(t("passwordNoMatch"));
         return;
       }
       onSubmit({ currentPassword, newPassword });
@@ -212,10 +218,10 @@ export const DrawerMenu = ({
 
     return (
       <Dialog open={open} onClose={onClose}>
-        <DialogTitle>Change Password</DialogTitle>
+        <DialogTitle>{t("changePassword")}</DialogTitle>
         <DialogContent>
           <TextField
-            label="Current Password"
+            label={t("currentPassword")}
             type="password"
             fullWidth
             margin="dense"
@@ -223,7 +229,7 @@ export const DrawerMenu = ({
             onChange={(e) => setCurrentPassword(e.target.value)}
           />
           <TextField
-            label="New Password"
+            label={t("newPassword")}
             type="password"
             fullWidth
             margin="dense"
@@ -231,7 +237,7 @@ export const DrawerMenu = ({
             onChange={(e) => setNewPassword(e.target.value)}
           />
           <TextField
-            label="Repeat New Password"
+            label={"repeatPassword"}
             type="password"
             fullWidth
             margin="dense"
@@ -245,9 +251,9 @@ export const DrawerMenu = ({
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
+          <Button onClick={onClose}>{t("cancel")}</Button>
           <Button onClick={handleSubmit} variant="contained" color="primary">
-            Change Password
+            {t("changePassword")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -261,7 +267,7 @@ export const DrawerMenu = ({
         {/* Status Option */}
         <ListItem button onClick={handleStatusMenuOpen}>
           <ListItemText
-            primary="Status"
+            primary={t("status")}
             secondary={userStatus}
             secondaryTypographyProps={{
               style: { textTransform: "capitalize" },
@@ -284,12 +290,12 @@ export const DrawerMenu = ({
         <ListItem
           button
           onClick={() =>
-            handleTextEdit("customMessage", "Edit Message", userCustomMessage)
+            handleTextEdit("customMessage", t("editMessage"), userCustomMessage)
           }
         >
           <ListItemText
-            primary="Personal Message"
-            secondary={userCustomMessage || "No message set"}
+            primary={t("personalMessage")}
+            secondary={userCustomMessage || t("noMessageSet")}
             secondaryTypographyProps={{
               style: {
                 whiteSpace: "nowrap",
@@ -304,11 +310,11 @@ export const DrawerMenu = ({
         {/* Bio */}
         <ListItem
           button
-          onClick={() => handleTextEdit("bio", "Edit Bio", userBio)}
+          onClick={() => handleTextEdit("bio", t("editBio"), userBio)}
         >
           <ListItemText
             primary="Bio"
-            secondary={userBio || "No bio available"}
+            secondary={userBio || t("noBioAvailable")}
             secondaryTypographyProps={{
               style: {
                 display: "-webkit-box",
@@ -325,7 +331,7 @@ export const DrawerMenu = ({
         <ListItem button onClick={handlePicturesClick}>
           <Box sx={{ width: "100%" }}>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              Images
+              {t("images")}
             </Typography>
             <Box
               sx={{
@@ -346,7 +352,7 @@ export const DrawerMenu = ({
                   cursor: "pointer",
                 }}
               >
-                <Typography variant="body2">Add image</Typography>
+                <Typography variant="body2">{t("addImage")}</Typography>
               </Box>
               {orderedImages &&
                 orderedImages.map((img, index) => (
@@ -354,7 +360,7 @@ export const DrawerMenu = ({
                     key={index}
                     component="img"
                     src={img}
-                    alt={`User content ${index}`}
+                    alt={`${t("userContent")} ${index}`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={handleDragOver}
@@ -391,9 +397,9 @@ export const DrawerMenu = ({
           horizontal: "left",
         }}
       >
-        {["Online", "Away", "Busy", "Offline"].map((status) => (
+        {["Online", "Away", "Busy", "Offline"].map((status, i) => (
           <MenuItem
-            key={status}
+            key={i}
             onClick={() => {
               handleStatusChange(status.toLowerCase());
               handleStatusMenuClose();
@@ -410,7 +416,15 @@ export const DrawerMenu = ({
                   mr: 2,
                 }}
               />
-              <Typography>{status}</Typography>
+              <Typography>
+                {i === 0
+                  ? t("online")
+                  : i === 1
+                  ? t("away")
+                  : i === 2
+                  ? t("busy")
+                  : t("offline")}
+              </Typography>
             </Box>
           </MenuItem>
         ))}
@@ -425,38 +439,49 @@ export const DrawerMenu = ({
         <ListItemIcon>
           <VpnKey />
         </ListItemIcon>
-        <ListItemText primary="Change Password" />
+        <ListItemText primary={t("changePassword")} />
       </ListItem>
-      <ListItem
-        button
-        onClick={() => handleOptionClick("Language Preferences")}
-      >
+      <ListItem>
         <ListItemIcon>
           <Language />
         </ListItemIcon>
-        <ListItemText primary="Language Preferences" />
+        {LanguagePreferencesContent()}
       </ListItem>
+      <ListItem>{ThemePreferencesContent()}</ListItem>
     </List>
   );
 
-  // Language Preferences content with a switch for English/Spanish.
   const LanguagePreferencesContent = () => (
     <Box
       sx={{
-        p: 2,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
       }}
     >
-      <Typography variant="h6">Language Preferences</Typography>
       <Box sx={{ display: "flex", alignItems: "center" }}>
-        <Typography variant="body2">English</Typography>
+        <Typography variant="body2">{t("english")}</Typography>
         <Switch
-          checked={language === "spanish"}
+          checked={i18n.language === "es"}
           onChange={handleLanguageChange}
         />
-        <Typography variant="body2">Spanish</Typography>
+        <Typography variant="body2">{t("spanish")}</Typography>
+      </Box>
+    </Box>
+  );
+
+  const ThemePreferencesContent = () => (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Brightness7Icon />
+        <Switch checked={isDarkMode} onChange={toggleTheme} />
+        <Brightness4Icon />
       </Box>
     </Box>
   );
@@ -502,7 +527,15 @@ export const DrawerMenu = ({
               <ArrowBack />
             </IconButton>
             <Typography variant="h6" sx={{ ml: 1 }}>
-              {selectedOption || "Menu"}
+              {selectedOption === "Profile"
+                ? t("profile")
+                : selectedOption === "Settings"
+                ? t("settings")
+                : selectedOption === "Notifications"
+                ? t("notifications")
+                : selectedOption === "Contacts"
+                ? t("contacts")
+                : "Menu"}
             </Typography>
           </Box>
         </Box>
@@ -512,10 +545,10 @@ export const DrawerMenu = ({
         {!selectedOption ? (
           <List>
             {["Profile", "Settings", "Notifications", "Contacts"].map(
-              (option) => (
+              (option, i) => (
                 <ListItem
                   button
-                  key={option}
+                  key={i}
                   onClick={() => handleOptionClick(option)}
                 >
                   <ListItemIcon sx={{ color: "inherit" }}>
@@ -529,7 +562,17 @@ export const DrawerMenu = ({
                       <People />
                     )}
                   </ListItemIcon>
-                  <ListItemText primary={option} />
+                  <ListItemText
+                    primary={
+                      i === 0
+                        ? t("profile")
+                        : i === 1
+                        ? t("settings")
+                        : i === 2
+                        ? t("notifications")
+                        : t("contacts")
+                    }
+                  />
                 </ListItem>
               )
             )}
@@ -545,9 +588,6 @@ export const DrawerMenu = ({
           <Box>
             {selectedOption === "Profile" && <ProfileContent />}
             {selectedOption === "Settings" && <SettingsContent />}
-            {selectedOption === "Language Preferences" && (
-              <LanguagePreferencesContent />
-            )}
           </Box>
         )}
       </Drawer>

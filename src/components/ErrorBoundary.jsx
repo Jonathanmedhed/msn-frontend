@@ -1,6 +1,7 @@
 // src/components/ErrorBoundary.jsx
 import { Component } from "react";
 import PropTypes from "prop-types";
+import { withTranslation } from "react-i18next";
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -14,25 +15,23 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // You can log error details to an error reporting service here.
+    // Log error details to an error reporting service here.
     console.error("ErrorBoundary caught an error:", error, errorInfo);
     this.setState({ errorInfo });
   }
 
   render() {
+    const { t } = this.props; // t is injected via withTranslation
+
     if (this.state.hasError) {
-      // Render any custom fallback UI
       return (
         <div style={{ padding: "2rem", textAlign: "center" }}>
-          <h2>Something went wrong.</h2>
+          <h2>{t("somethingWentWrong")}</h2>
           <p>{this.state.error && this.state.error.toString()}</p>
           <details style={{ whiteSpace: "pre-wrap" }}>
             {this.state.errorInfo && this.state.errorInfo.componentStack}
           </details>
-          <p>
-            Please try refreshing the page or contact support if the problem
-            persists.
-          </p>
+          <p>{t("PleaseTryRefreshingThePage")}</p>
         </div>
       );
     }
@@ -42,6 +41,11 @@ class ErrorBoundary extends Component {
 
 ErrorBoundary.propTypes = {
   children: PropTypes.node.isRequired,
+  t: PropTypes.func.isRequired,
 };
 
-export default ErrorBoundary;
+// Wrap the component and assign a display name for Fast Refresh
+const TranslatedErrorBoundary = withTranslation()(ErrorBoundary);
+TranslatedErrorBoundary.displayName = "ErrorBoundary";
+
+export default TranslatedErrorBoundary;
