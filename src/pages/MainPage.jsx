@@ -33,6 +33,7 @@ import {
 } from "../api";
 import LoginRegister from "./LoginRegisterPage";
 import { useAuth } from "../context/AuthContext";
+import TestNotification from "../components/TestNotification";
 
 export const MainPage = () => {
   // Use our custom hook to fetch user data
@@ -331,6 +332,7 @@ export const MainPage = () => {
       }}
     >
       <CssBaseline />
+      <TestNotification />
       {loading ? (
         <Box
           sx={{

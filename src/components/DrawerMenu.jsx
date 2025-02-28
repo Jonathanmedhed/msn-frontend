@@ -79,6 +79,21 @@ export const DrawerMenu = ({
     message: "",
     severity: "success", // "success" or "error"
   });
+  // State for notifications settings:
+  const [notificationSettings, setNotificationSettings] = useState({
+    notifications: true,
+    messages: true,
+    friendRequests: true,
+    friendOnline: true,
+  });
+
+  // Load notification settings from local storage on mount.
+  useEffect(() => {
+    const storedSettings = localStorage.getItem("notificationSettings");
+    if (storedSettings) {
+      setNotificationSettings(JSON.parse(storedSettings));
+    }
+  }, []);
 
   // Sync local images order with prop changes
   useEffect(() => {
@@ -193,6 +208,39 @@ export const DrawerMenu = ({
   const handleNotificationClose = (event, reason) => {
     if (reason === "clickaway") return;
     setNotification({ ...notification, open: false });
+  };
+
+  // Handler to update notification settings.
+  const handleNotificationSwitchChange = (key, checked) => {
+    let updatedSettings;
+    if (key === "notifications") {
+      if (!checked) {
+        // If turning off notifications, force all settings to false.
+        updatedSettings = {
+          notifications: false,
+          messages: false,
+          friendRequests: false,
+          friendOnline: false,
+        };
+      } else {
+        // Turning notifications on—restore defaults (or you could restore saved values)
+        updatedSettings = {
+          notifications: true,
+          messages: true,
+          friendRequests: true,
+          friendOnline: true,
+        };
+      }
+    } else {
+      // If notifications are off, don't allow toggling individual settings.
+      if (!notificationSettings.notifications) return;
+      updatedSettings = { ...notificationSettings, [key]: checked };
+    }
+    setNotificationSettings(updatedSettings);
+    localStorage.setItem(
+      "notificationSettings",
+      JSON.stringify(updatedSettings)
+    );
   };
 
   // Change Password Dialog Component
@@ -486,6 +534,50 @@ export const DrawerMenu = ({
     </Box>
   );
 
+  const NotificationsContent = () => (
+    <List>
+      <ListItem>
+        <ListItemText primary={t("notifications")} />
+        <Switch
+          checked={notificationSettings.notifications}
+          onChange={(e) =>
+            handleNotificationSwitchChange("notifications", e.target.checked)
+          }
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemText primary={t("messages")} />
+        <Switch
+          checked={notificationSettings.messages}
+          onChange={(e) =>
+            handleNotificationSwitchChange("messages", e.target.checked)
+          }
+          disabled={!notificationSettings.notifications}
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemText primary={t("friendRequests")} />
+        <Switch
+          checked={notificationSettings.friendRequests}
+          onChange={(e) =>
+            handleNotificationSwitchChange("friendRequests", e.target.checked)
+          }
+          disabled={!notificationSettings.notifications}
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemText primary={t("friendOnline")} />
+        <Switch
+          checked={notificationSettings.friendOnline}
+          onChange={(e) =>
+            handleNotificationSwitchChange("friendOnline", e.target.checked)
+          }
+          disabled={!notificationSettings.notifications}
+        />
+      </ListItem>
+    </List>
+  );
+
   return (
     <>
       {/* Render the Change Password Dialog */}
@@ -588,6 +680,7 @@ export const DrawerMenu = ({
           <Box>
             {selectedOption === "Profile" && <ProfileContent />}
             {selectedOption === "Settings" && <SettingsContent />}
+            {selectedOption === "Notifications" && <NotificationsContent />}
           </Box>
         )}
       </Drawer>

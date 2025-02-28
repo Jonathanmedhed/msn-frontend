@@ -20,6 +20,9 @@ importers:
       '@capacitor/ios':
         specifier: ^7.0.1
         version: 7.0.1(@capacitor/core@7.0.1)
+      '@capacitor/local-notifications':
+        specifier: ^7.0.0
+        version: 7.0.0(@capacitor/core@7.0.1)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.0.10)(react@19.0.0)
@@ -163,6 +166,11 @@ packages:
     resolution: {integrity: sha512-RN6S1C1k7ue57DFmJM4EizzsYBrahTTiMhcnlHspFLaojgHbFWZbYq1VriuRKysPU1ka/P+klsdtRFsB5K9jyw==}
     peerDependencies:
       '@capacitor/core': ^7.0.0
+
+  '@capacitor/local-notifications@7.0.0':
+    resolution: {integrity: sha512-+k93w1W0hZTVxM8rjttEyUKkkHxOW776POFM4snDcwv+sAxWX+YK+oqIwNtln6N5Plp3Z9TkQS0RufwZbl7GUw==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
 
   '@emotion/babel-plugin@11.13.5':
     resolution: {integrity: sha512-pxHCpT2ex+0q+HH91/zsdHkw/lXd468DIN2zvfvLtPKLLMo6gQj7oLObq8PhkrxOZb/gGCq03S3Z7PDhS8pduQ==}
@@ -2212,6 +2220,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.0.1
 
+  '@capacitor/local-notifications@7.0.0(@capacitor/core@7.0.1)':
+    dependencies:
+      '@capacitor/core': 7.0.1
+
   '@emotion/babel-plugin@11.13.5':
     dependencies:
       '@babel/helper-module-imports': 7.25.9
@@ -3347,16 +3359,21 @@ snapshots:
       dotenv: 16.4.7
       emoji-mart: 5.6.0
       emoji-picker-react: 4.12.0(react@19.0.0)
+      i18next: 24.2.2
+      i18next-browser-languagedetector: 8.0.4
       prop-types: 15.8.1
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
+      react-i18next: 15.4.1(i18next@24.2.2)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       socket.io-client: 4.8.1
     transitivePeerDependencies:
       - '@mui/material-pigment-css'
       - '@types/react'
       - bufferutil
       - debug
+      - react-native
       - supports-color
+      - typescript
       - utf-8-validate
 
   fs-extra@11.3.0:
