@@ -48,6 +48,7 @@ import { ThemeContext } from "../ThemeContext";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import { UserCard } from "./UserCard";
+import { CircularProgress } from "@mui/material";
 
 export const DrawerMenu = ({
   isDrawerOpen,
@@ -65,6 +66,7 @@ export const DrawerMenu = ({
   blockedContacts,
   onBlockContact,
   onRemoveContact,
+  isUploading,
 }) => {
   const { i18n, t } = useTranslation();
 
@@ -125,6 +127,15 @@ export const DrawerMenu = ({
 
   const closeConfirmDialog = () => {
     setConfirmDialog({ open: false, action: "", contact: null });
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    const newImages = orderedImages.filter(
+      (_, index) => index !== indexToRemove
+    );
+    setOrderedImages(newImages);
+    // Update parent's state (if needed)
+    handleFieldUpdate("pictures", newImages);
   };
 
   const handleConfirmAction = () => {
@@ -434,6 +445,7 @@ export const DrawerMenu = ({
                   border: "1px dashed gray",
                   borderRadius: 1,
                   cursor: "pointer",
+                  textAlign: "center",
                 }}
               >
                 <Typography variant="body2">{t("addImage")}</Typography>
@@ -442,26 +454,49 @@ export const DrawerMenu = ({
                 orderedImages.map((img, index) => (
                   <Box
                     key={index}
-                    component="img"
-                    src={img}
-                    alt={`${t("userContent")} ${index}`}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={handleDragOver}
-                    onDrop={(e) => handleDrop(e, index)}
-                    sx={{
-                      height: 80,
-                      width: "100%",
-                      borderRadius: 1,
-                      objectFit: "cover",
-                      border:
-                        index === 0
-                          ? `2px solid ${theme.palette.primary.main}`
-                          : "none",
-                      cursor: "grab",
-                    }}
-                  />
+                    sx={{ position: "relative", display: "inline-block" }}
+                  >
+                    <Box
+                      component="img"
+                      src={img}
+                      alt={`${t("userContent")} ${index}`}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                      sx={{
+                        height: 80,
+                        width: "100%",
+                        borderRadius: 1,
+                        objectFit: "cover",
+                        border:
+                          index === 0
+                            ? `2px solid ${theme.palette.primary.main}`
+                            : "none",
+                        cursor: "grab",
+                      }}
+                    />
+                    <IconButton
+                      sx={{
+                        position: "absolute",
+                        top: 2,
+                        right: 2,
+                        bgcolor: "rgba(0,0,0,0.5)",
+                        color: "white",
+                        "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                        p: 0.5,
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveImage(index);
+                      }}
+                      size="small"
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
                 ))}
+              {isUploading && <CircularProgress />}
             </Box>
           </Box>
         </ListItem>
@@ -861,6 +896,7 @@ DrawerMenu.propTypes = {
   blockedContacts: PropTypes.array,
   onBlockContact: PropTypes.func,
   onRemoveContact: PropTypes.func,
+  isUploading: PropTypes.bool,
 };
 
 export default DrawerMenu;

@@ -22,7 +22,6 @@ import { Sidebar } from "../components/SideBar";
 import { DrawerMenu } from "../components/DrawerMenu";
 import {
   updateUserProfile,
-  uploadProfilePicture,
   uploadPictures,
   blockContact,
   removeContact,
@@ -68,9 +67,9 @@ export const MainPage = () => {
     status: "", // "success" or "error"
     message: "",
   });
+  const [isUploading, setIsUploading] = useState(false);
 
   // Refs for file inputs (profile picture & multiple pictures)
-  const profilePictureInputRef = useRef(null);
   const picturesInputRef = useRef(null);
   const searchInputRef = useRef(null);
 
@@ -178,29 +177,18 @@ export const MainPage = () => {
     [toggleDrawer]
   );
 
-  const handleProfilePictureChange = useCallback(
-    async (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        try {
-          await uploadProfilePicture(userProfile._id, file);
-          refetch();
-        } catch (error) {
-          console.error("Error uploading profile picture:", error.message);
-        }
-      }
-    },
-    [userProfile?._id, refetch]
-  );
-
   const handlePicturesClick = useCallback(() => {
-    picturesInputRef.current && picturesInputRef.current.click();
-  }, []);
+    if (!isUploading && picturesInputRef.current) {
+      picturesInputRef.current.click();
+    }
+  }, [isUploading]);
 
+  // Update your handlePicturesChange to ensure the input is cleared and blurred.
   const handlePicturesChange = useCallback(
     async (event) => {
       const files = event.target.files;
       if (files && files.length > 0) {
+        setIsUploading(true);
         try {
           const filesArray = Array.from(files);
           await uploadPictures(userProfile._id, filesArray);
@@ -208,7 +196,12 @@ export const MainPage = () => {
         } catch (error) {
           console.error("Error uploading pictures:", error.message);
         }
+        setIsUploading(false);
       }
+      // Clear the file input so the same file can be selected again.
+      event.target.value = "";
+      // Optionally, remove focus from the input.
+      event.target.blur();
     },
     [userProfile?._id, refetch]
   );
@@ -556,6 +549,7 @@ export const MainPage = () => {
             handleMenuItemClick={handleMenuItemClick}
             handleFieldUpdate={handleFieldUpdate}
             handlePicturesClick={handlePicturesClick}
+            isUploading={isUploading}
             onBlockContact={handleBlockContact}
             onRemoveContact={handleRemoveContact}
           />
@@ -569,14 +563,7 @@ export const MainPage = () => {
           />
         </>
       )}
-      {/* Hidden file inputs */}
-      <input
-        type="file"
-        accept="image/*"
-        ref={profilePictureInputRef}
-        style={{ display: "none" }}
-        onChange={handleProfilePictureChange}
-      />
+      {/* Hidden file input */}
       <input
         type="file"
         accept="image/*"
