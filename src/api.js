@@ -68,7 +68,7 @@ export const logoutUser = async () => {
 export const changePassword = async ({ currentPassword, newPassword }) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    throw new Error("User not authenticated");
+    throw new Error(t(""));
   }
 
   const response = await api.post(

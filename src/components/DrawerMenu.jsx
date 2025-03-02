@@ -655,6 +655,9 @@ export const DrawerMenu = ({
       contact.name.toLowerCase().includes(contactsSearch.toLowerCase())
     );
 
+    const checkIfBlocked = (user) => {
+      return blockedContacts.map(String).includes(String(user._id));
+    };
     return (
       <Box>
         <Dialog open={confirmDialog.open} onClose={closeConfirmDialog}>
@@ -664,7 +667,11 @@ export const DrawerMenu = ({
           <DialogContent>
             <Typography>
               {confirmDialog.action === "block"
-                ? `${t("blockA")} ${confirmDialog.contact?.name}?`
+                ? `${t(
+                    checkIfBlocked(confirmDialog.contact)
+                      ? "unBlockA"
+                      : "blockA"
+                  )} ${confirmDialog.contact?.name}?`
                 : `${t("deleteA")} ${confirmDialog.contact?.name}?`}
             </Typography>
           </DialogContent>
