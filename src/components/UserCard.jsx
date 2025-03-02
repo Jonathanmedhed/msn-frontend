@@ -41,16 +41,16 @@ export const UserCard = memo(
   }) => {
     const { t } = useTranslation();
 
-    const getStatusColor = (status) => {
-      switch (status) {
+    const getStatusColor = () => {
+      switch (user.status) {
         case "online":
           return "green";
         case "offline":
-          return "red";
-        case "busy":
-          return "orange";
-        default:
           return "gray";
+        case "busy":
+          return "red";
+        default:
+          return "orange";
       }
     };
 
@@ -158,8 +158,8 @@ export const UserCard = memo(
           variant="dot"
           sx={{
             "& .MuiBadge-badge": {
-              backgroundColor: getStatusColor(user.status),
-              color: getStatusColor(user.status),
+              backgroundColor: getStatusColor(),
+              color: getStatusColor(),
               boxShadow: `0 0 0 2px white`,
               width: largeStatus ? 16 : 12,
               height: largeStatus ? 16 : 12,
@@ -227,7 +227,7 @@ export const UserCard = memo(
             >
               {isLoggedInUser ? (
                 <Box>
-                  {["Online", "Away", "Busy", "Offline"].map((status, i) => (
+                  {["online", "away", "busy", "offline"].map((status, i) => (
                     <MenuItem
                       key={i}
                       onClick={() => {
@@ -248,7 +248,14 @@ export const UserCard = memo(
                             width: 10,
                             height: 10,
                             borderRadius: "50%",
-                            backgroundColor: getStatusColor(status),
+                            backgroundColor:
+                              status === "online"
+                                ? "green"
+                                : status === "away"
+                                ? "orange"
+                                : status === "busy"
+                                ? "red"
+                                : "gray",
                             mr: 2,
                           }}
                         />

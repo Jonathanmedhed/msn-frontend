@@ -1,4 +1,3 @@
-import { useContext } from "react";
 import {
   AppBar,
   Toolbar,
@@ -9,9 +8,6 @@ import {
 } from "@mui/material";
 import { Menu as MenuIcon, ArrowBack } from "@mui/icons-material";
 import PropTypes from "prop-types";
-import Brightness4Icon from "@mui/icons-material/Brightness4";
-import Brightness7Icon from "@mui/icons-material/Brightness7";
-import { ThemeContext } from "../ThemeContext";
 import { useTranslation } from "react-i18next";
 
 export const AppBarComponent = ({
@@ -21,19 +17,8 @@ export const AppBarComponent = ({
   onBackClick,
   isLoggedIn,
   onLoginClick,
-  logout,
 }) => {
   const { t } = useTranslation();
-  const { toggleTheme, isDarkMode } = useContext(ThemeContext);
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      window.location.reload();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
 
   return (
     <AppBar position="static">
@@ -48,18 +33,11 @@ export const AppBarComponent = ({
           Microsoft Messenger
         </Typography>
 
-        <IconButton color="inherit" onClick={toggleTheme}>
-          {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
-        </IconButton>
-
         {isLoggedIn ? (
           <Box>
             <IconButton color="inherit" onClick={toggleSidebar} edge="end">
               <MenuIcon />
             </IconButton>
-            <Button color="inherit" onClick={handleLogout}>
-              {t("logout")}
-            </Button>
           </Box>
         ) : (
           <Button color="inherit" onClick={onLoginClick}>
@@ -77,5 +55,4 @@ AppBarComponent.propTypes = {
   showBackButton: PropTypes.bool.isRequired,
   onBackClick: PropTypes.func.isRequired,
   onLoginClick: PropTypes.func,
-  logout: PropTypes.func,
 };

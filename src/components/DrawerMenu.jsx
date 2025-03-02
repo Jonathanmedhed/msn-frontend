@@ -12,6 +12,11 @@ import {
   VpnKey,
   Language,
 } from "@mui/icons-material";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import BlockIcon from "@mui/icons-material/Block";
+import DeleteIcon from "@mui/icons-material/Delete";
+
 import {
   Avatar,
   Box,
@@ -35,12 +40,14 @@ import {
   TextField,
   Snackbar,
   Alert,
+  InputAdornment,
 } from "@mui/material";
 import { TextFieldDialog } from "./TextFieldDialog";
 import { logoutUser, changePassword } from "../api";
 import { ThemeContext } from "../ThemeContext";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
+import { UserCard } from "./UserCard";
 
 export const DrawerMenu = ({
   isDrawerOpen,
@@ -54,12 +61,24 @@ export const DrawerMenu = ({
   handleStatusChange,
   handleFieldUpdate,
   handlePicturesClick,
+  contacts,
+  blockedContacts,
+  onBlockContact,
+  onRemoveContact,
 }) => {
   const { i18n, t } = useTranslation();
 
   const theme = useTheme();
+
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    action: "", // "block" or "delete"
+    contact: null,
+  });
+
   const { toggleTheme, isDarkMode } = useContext(ThemeContext);
 
+  const [contactsSearch, setContactsSearch] = useState("");
   const [selectedOption, setSelectedOption] = useState(null);
   const [statusAnchorEl, setStatusAnchorEl] = useState(null);
   // State for generic dialog (for editing fields like bio, message)
@@ -99,6 +118,23 @@ export const DrawerMenu = ({
   useEffect(() => {
     setOrderedImages(userImages || []);
   }, [userImages]);
+
+  const openConfirmDialog = (action, contact) => {
+    setConfirmDialog({ open: true, action, contact });
+  };
+
+  const closeConfirmDialog = () => {
+    setConfirmDialog({ open: false, action: "", contact: null });
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmDialog.action === "block") {
+      onBlockContact(confirmDialog.contact);
+    } else if (confirmDialog.action === "delete") {
+      onRemoveContact(confirmDialog.contact);
+    }
+    closeConfirmDialog();
+  };
 
   // Handle text field edits
   const handleTextEdit = (field, title, currentValue) => {
@@ -445,7 +481,7 @@ export const DrawerMenu = ({
           horizontal: "left",
         }}
       >
-        {["Online", "Away", "Busy", "Offline"].map((status, i) => (
+        {["online", "away", "busy", "offline"].map((status, i) => (
           <MenuItem
             key={i}
             onClick={() => {
@@ -578,6 +614,110 @@ export const DrawerMenu = ({
     </List>
   );
 
+  const ContactsContent = () => {
+    // Filter contacts based on the search query.
+    const filteredContacts = contacts.filter((contact) =>
+      contact.name.toLowerCase().includes(contactsSearch.toLowerCase())
+    );
+
+    return (
+      <Box>
+        <Dialog open={confirmDialog.open} onClose={closeConfirmDialog}>
+          <DialogTitle>
+            {confirmDialog.action === "block" ? t("block") : t("delete")}
+          </DialogTitle>
+          <DialogContent>
+            <Typography>
+              {confirmDialog.action === "block"
+                ? `${t("blockA")} ${confirmDialog.contact?.name}?`
+                : `${t("deleteA")} ${confirmDialog.contact?.name}?`}
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={closeConfirmDialog}>{t("cancel")}</Button>
+            <Button
+              onClick={handleConfirmAction}
+              variant="contained"
+              color="primary"
+            >
+              {t("confirm")}
+            </Button>
+          </DialogActions>
+        </Dialog>
+        <Box sx={{ p: 2, borderBottom: "1px solid", borderColor: "divider" }}>
+          <TextField
+            fullWidth
+            placeholder={t("search")}
+            size="small"
+            value={contactsSearch}
+            onChange={(e) => setContactsSearch(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <IconButton size="small">
+                    <SearchIcon sx={{ color: "text.secondary" }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+              endAdornment: contactsSearch && (
+                <InputAdornment position="end">
+                  <IconButton
+                    onClick={() => setContactsSearch("")}
+                    size="small"
+                  >
+                    <CloseIcon sx={{ color: "text.secondary" }} />
+                  </IconButton>
+                </InputAdornment>
+              ),
+              sx: {
+                backgroundColor: "background.paper",
+                borderRadius: "25px",
+                "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+              },
+            }}
+          />
+        </Box>
+        <List sx={{ flexGrow: 1, overflowY: "auto" }}>
+          {filteredContacts.map((contact) => (
+            <ListItem
+              button
+              key={contact._id}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <UserCard blockedContacts={blockedContacts} user={contact} />
+              <Box>
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openConfirmDialog("block", contact);
+                  }}
+                  size="small"
+                  color="primary"
+                >
+                  <BlockIcon />
+                </IconButton>
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openConfirmDialog("delete", contact);
+                  }}
+                  size="small"
+                  color="error"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </Box>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    );
+  };
+
   return (
     <>
       {/* Render the Change Password Dialog */}
@@ -681,6 +821,7 @@ export const DrawerMenu = ({
             {selectedOption === "Profile" && <ProfileContent />}
             {selectedOption === "Settings" && <SettingsContent />}
             {selectedOption === "Notifications" && <NotificationsContent />}
+            {selectedOption === "Contacts" && <ContactsContent />}
           </Box>
         )}
       </Drawer>
@@ -716,6 +857,10 @@ DrawerMenu.propTypes = {
   open: PropTypes.bool,
   onClose: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
+  contacts: PropTypes.array,
+  blockedContacts: PropTypes.array,
+  onBlockContact: PropTypes.func,
+  onRemoveContact: PropTypes.func,
 };
 
 export default DrawerMenu;

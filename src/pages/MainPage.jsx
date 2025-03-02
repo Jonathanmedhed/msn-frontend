@@ -33,9 +33,12 @@ import {
 } from "../api";
 import LoginRegister from "./LoginRegisterPage";
 import { useAuth } from "../context/AuthContext";
-import TestNotification from "../components/TestNotification";
+import { useTranslation } from "react-i18next";
+import FriendRequestStatusDialog from "../components/FriendRequestStatusDialog";
 
 export const MainPage = () => {
+  const { t } = useTranslation();
+
   // Use our custom hook to fetch user data
   const {
     userProfile,
@@ -60,6 +63,11 @@ export const MainPage = () => {
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isSearchUserDialogOpen, setIsSearchUserDialogOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [friendRequestDialog, setFriendRequestDialog] = useState({
+    open: false,
+    status: "", // "success" or "error"
+    message: "",
+  });
 
   // Refs for file inputs (profile picture & multiple pictures)
   const profilePictureInputRef = useRef(null);
@@ -71,6 +79,10 @@ export const MainPage = () => {
 
   // Determine if authenticated (using our custom hook's userProfile)
   const isAuthenticated = Boolean(userProfile);
+
+  const closeFriendRequestDialog = useCallback(() => {
+    setFriendRequestDialog({ open: false, status: "", message: "" });
+  }, []);
 
   // Handler functions for menus and dialogs
   const handleMenuOpen = useCallback(
@@ -253,14 +265,35 @@ export const MainPage = () => {
 
   const handleSendFriendRequest = useCallback(
     async (email) => {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setFriendRequestDialog({
+          open: true,
+          status: "error",
+          message: t("invalidEmailFormat"),
+        });
+        return;
+      }
       try {
+        // Assume sendFriendRequest returns a promise that rejects
+        // if the email is not found in the database.
         await sendFriendRequest(userProfile._id, email);
+        setFriendRequestDialog({
+          open: true,
+          status: "success",
+          message: t("requestSent"),
+        });
         refetch();
       } catch (error) {
-        console.error("Error sending friend request:", error.message);
+        setFriendRequestDialog({
+          open: true,
+          status: "error",
+          message: error.message || t("errorSendingRequest"),
+        });
       }
     },
-    [userProfile?._id, refetch]
+    [userProfile?._id, refetch, t]
   );
 
   const handleAddUser = useCallback(
@@ -314,10 +347,10 @@ export const MainPage = () => {
         }}
       >
         <CssBaseline />
-        <h2>Oops, an error occurred.</h2>
-        <p>{error.message || "Something went wrong."}</p>
+        <h2>{t("OopsAnErrorOccurred")}</h2>
+        <p>{error.message || t("somethingWentWrong.")}</p>
         <Button variant="contained" onClick={refetch}>
-          Try Again
+          {t("tryAgain")}
         </Button>
       </Box>
     );
@@ -332,7 +365,6 @@ export const MainPage = () => {
       }}
     >
       <CssBaseline />
-      <TestNotification />
       {loading ? (
         <Box
           sx={{
@@ -348,6 +380,12 @@ export const MainPage = () => {
         <LoginRegister login={login} register={register} />
       ) : (
         <>
+          <FriendRequestStatusDialog
+            open={friendRequestDialog.open}
+            status={friendRequestDialog.status}
+            message={friendRequestDialog.message}
+            onClose={closeFriendRequestDialog}
+          />
           <AppBarComponent
             isMobile={isMobile}
             showBackButton={showBackButton}
@@ -374,9 +412,15 @@ export const MainPage = () => {
             open={Boolean(anchorEl)}
             onClose={handleMenuClose}
           >
-            {["Online", "Away", "Busy", "Offline", "Blocked"].map((status) => (
-              <MenuItem key={status} onClick={() => handleStatusChange(status)}>
-                {status}
+            {["online", "away", "busy", "offline"].map((status, i) => (
+              <MenuItem key={i} onClick={() => handleStatusChange(status)}>
+                {i === 0
+                  ? t("online")
+                  : i === 1
+                  ? t("away")
+                  : i === 2
+                  ? t("busy")
+                  : t("offline")}
               </MenuItem>
             ))}
           </Menu>
@@ -433,7 +477,11 @@ export const MainPage = () => {
                     width: "100%",
                   }}
                 >
-                  <h2>Select a contact to start chatting</h2>
+                  <h2>
+                    {contactList?.lengh > 0
+                      ? t("selectAcontactToStartChatting")
+                      : t("addAcontactToStartChatting")}
+                  </h2>
                 </Box>
               )}
             </Box>
@@ -489,6 +537,8 @@ export const MainPage = () => {
             blockedContacts={userProfile.blockedContacts}
           />
           <DrawerMenu
+            blockedContacts={userProfile.blockedContacts}
+            contacts={contactList}
             isDrawerOpen={isDrawerOpen}
             toggleDrawer={toggleDrawer}
             isMobile={isMobile}
@@ -506,6 +556,8 @@ export const MainPage = () => {
             handleMenuItemClick={handleMenuItemClick}
             handleFieldUpdate={handleFieldUpdate}
             handlePicturesClick={handlePicturesClick}
+            onBlockContact={handleBlockContact}
+            onRemoveContact={handleRemoveContact}
           />
           <EditPersonalMessageDialog
             isEditDialogOpen={isEditDialogOpen}
