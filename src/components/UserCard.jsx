@@ -78,9 +78,22 @@ export const UserCard = memo(
     };
 
     // Determine if there is a last message on the chat
-    const hasLastMessage = chat && chat.lastMessage && chat.lastMessage.content;
-    const lastMessage = hasLastMessage ? chat.lastMessage.content : "";
-
+    const hasLastMessage =
+      chat &&
+      chat.lastMessage &&
+      (chat.lastMessage.content || chat.lastMessage.attachments);
+    let lastMessage = "";
+    if (chat && chat.lastMessage) {
+      // If there are attachments, show "attachment", otherwise show the content.
+      if (
+        chat.lastMessage.attachments &&
+        chat.lastMessage.attachments.length > 0
+      ) {
+        lastMessage = chat.lastMessage.attachments[0].type; // use your translation key if needed
+      } else {
+        lastMessage = chat.lastMessage.content;
+      }
+    }
     // Use the first picture in user.pictures if available, otherwise use a default image.
     const avatarSrc =
       user.pictures && user.pictures.length > 0 ? user.pictures[0] : "";
@@ -446,11 +459,7 @@ UserCard.propTypes = {
         content: PropTypes.string.isRequired,
       })
     ),
-    lastMessage: PropTypes.shape({
-      _id: PropTypes.string,
-      content: PropTypes.string,
-      createdAt: PropTypes.string,
-    }),
+    lastMessage: PropTypes.object,
   }),
 };
 

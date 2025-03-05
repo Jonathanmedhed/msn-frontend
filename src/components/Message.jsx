@@ -1,10 +1,12 @@
-import { Box, Typography, Paper } from "@mui/material";
+import { Box, Typography, Paper, IconButton } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
 import PropTypes from "prop-types";
 
 export const Message = ({
+  messageId,
   text,
   isUser,
   status,
@@ -12,6 +14,7 @@ export const Message = ({
   error,
   isContactList,
   attachments,
+  onRemovePreview, // Function to remove preview message
 }) => {
   const iconSize = isContactList ? "0.1rem" : "small";
 
@@ -59,25 +62,41 @@ export const Message = ({
           backgroundColor: isUser ? "#1976d2" : "#4caf50",
           color: "white",
           borderRadius: isUser ? "20px 20px 0 20px" : "20px 20px 20px 0",
+          minHeight:
+            attachments && attachments.length > 0 && !text ? 80 : "auto",
         }}
       >
         <Typography variant="body1">{text}</Typography>
-        {attachments && attachments.length > 0 && (
-          <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 1 }}>
-            {attachments.map((attachment, index) =>
-              attachment.type === "image" && attachment.url ? (
-                <Box key={index}>
-                  <Box
-                    component="img"
-                    src={attachment.url}
-                    alt={`attachment-preview-${index}`}
-                    sx={{ maxWidth: "200px", borderRadius: 1 }}
-                  />
-                </Box>
-              ) : null
-            )}
-          </Box>
-        )}
+        {attachments &&
+          attachments.map((att, index) =>
+            att.type === "image" && att.url ? (
+              <Box key={index} sx={{ mt: 1, position: "relative" }}>
+                <Box
+                  component="img"
+                  src={att.url}
+                  alt="attachment preview"
+                  sx={{ maxWidth: "200px", borderRadius: 1 }}
+                />
+                {/* If this is a preview message, show a delete icon */}
+                {onRemovePreview && messageId.startsWith("preview-") && (
+                  <IconButton
+                    onClick={() => onRemovePreview(messageId)}
+                    size="small"
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      bgcolor: "rgba(0,0,0,0.5)",
+                      color: "white",
+                      "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                    }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+            ) : null
+          )}
       </Paper>
 
       {/* Meta Information */}
@@ -122,6 +141,7 @@ export const Message = ({
 };
 
 Message.propTypes = {
+  messageId: PropTypes.string.isRequired,
   text: PropTypes.string.isRequired,
   isUser: PropTypes.bool.isRequired,
   isContactList: PropTypes.bool,
@@ -129,12 +149,20 @@ Message.propTypes = {
     .isRequired,
   timestamp: PropTypes.instanceOf(Date).isRequired,
   error: PropTypes.string,
-  attachments: PropTypes.array,
+  attachments: PropTypes.arrayOf(
+    PropTypes.shape({
+      type: PropTypes.string,
+      url: PropTypes.string,
+      file: PropTypes.any,
+    })
+  ),
+  onRemovePreview: PropTypes.func, // Optional callback
 };
 
 Message.defaultProps = {
   error: null,
-  attachment: null,
+  attachments: [],
+  onRemovePreview: null,
 };
 
 export default Message;

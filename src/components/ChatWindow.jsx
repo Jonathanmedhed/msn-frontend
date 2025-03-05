@@ -108,11 +108,14 @@ export const ChatWindow = memo(
       }
     };
 
-    // New function to handle image selection
     const handleImageSelect = (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const previewUrl = URL.createObjectURL(file);
+      const files = Array.from(event.target.files);
+      if (files.length > 0) {
+        // Create preview objects for each file
+        const attachments = files.map((file) => {
+          return { file, previewUrl: URL.createObjectURL(file) };
+        });
+        // Use a single temporary ID for this preview message
         const tempId = `preview-${Date.now()}`;
         const previewMessage = {
           _id: tempId,
@@ -120,15 +123,25 @@ export const ChatWindow = memo(
           sender: currentUserId,
           status: "pending",
           createdAt: new Date(),
-          attachment: { type: "image", url: previewUrl, file },
+          // Save an array of attachments
+          attachments: attachments.map((att) => ({
+            type: "image",
+            url: att.previewUrl,
+            file: att.file,
+          })),
         };
-        console.log("Preview message created:", previewMessage); // Debug log
+        console.log("Preview message created:", previewMessage);
         setMessages((prev) => [...prev, previewMessage]);
-        setPreviewImages((prev) => [...prev, { file, previewUrl, tempId }]);
+        // Save all preview attachments with the same tempId so you know which message to update later
+        setPreviewImages((prev) => [
+          ...prev,
+          ...attachments.map((att) => ({ ...att, tempId })),
+        ]);
       }
       event.target.value = "";
       event.target.blur();
     };
+
     // Remove a preview message (and its file) if user cancels attachment.
     const handleRemovePreviewImage = (tempId) => {
       setPreviewImages((prev) => prev.filter((p) => p.tempId !== tempId));
@@ -141,23 +154,19 @@ export const ChatWindow = memo(
       if (previewImages.length === 0) return;
       setIsUploading(true);
       try {
-        // Extract file objects from previewImages.
         const filesArray = previewImages.map((imgObj) => imgObj.file);
-        // Call your API function to upload images.
         const uploadResponse = await uploadPictures(currentUserId, filesArray);
         console.log("Upload response:", uploadResponse);
-        // Assume the API returns an object with a 'pictureUrls' array.
         const pictureUrls = uploadResponse.pictureUrls || [];
         if (pictureUrls.length === 0) {
           console.error("No picture URLs returned from uploadPictures API");
           throw new Error("Image upload failed.");
         }
-        // Build the attachments array (one object per image).
+        // Build the attachments array
         const attachments = pictureUrls.map((url) => ({
           type: "image",
           url,
         }));
-
         // Ensure a chat exists.
         let chatId = selectedContact.chatId;
         if (!chatId) {
@@ -173,24 +182,18 @@ export const ChatWindow = memo(
           onUpdateContact({ ...selectedContact, chatId });
           console.log("Created new chat with id:", chatId);
         }
-
         // Send a new message with the attachments.
-        // You can decide if you want to send a caption (in 'content') or just the attachments.
         const sentMessageResponse = await sendMessage(
           chatId,
           currentUserId,
-          "", // No text content in this case
-          attachments // Pass attachments as an array
+          "", // No text content
+          attachments // Pass attachments array
         );
         console.log("Sent message with attachments:", sentMessageResponse);
-
-        // Update the messages state with the newly created message.
         setMessages((prev) => [...prev, sentMessageResponse.message]);
-        // Clear preview images since they've been sent.
         setPreviewImages([]);
       } catch (error) {
         console.error("Error sending image attachments:", error.message);
-        // Optionally show an error message to the user.
       } finally {
         setIsUploading(false);
       }
@@ -360,6 +363,7 @@ export const ChatWindow = memo(
             return (
               <Message
                 key={msg._id}
+                messageId={msg._id}
                 text={msg.content}
                 isUser={senderId === currentUserId}
                 status={msg.status}
@@ -374,7 +378,8 @@ export const ChatWindow = memo(
                     ? msg?.sender.pictures[0]
                     : "https://via.placeholder.com/150"
                 }
-                attachments={msg.attachments} // Pass attachment info to your Message component
+                attachments={msg.attachments}
+                onRemovePreview={handleRemovePreviewImage}
               />
             );
           })}
@@ -410,6 +415,7 @@ export const ChatWindow = memo(
                 hidden
                 onChange={handleImageSelect} // Use the new handleImageSelect for image preview
                 accept="image/*"
+                multiple
               />
               <ImageIcon />
             </IconButton>
