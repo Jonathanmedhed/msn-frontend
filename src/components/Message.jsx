@@ -11,6 +11,7 @@ export const Message = ({
   timestamp,
   error,
   isContactList,
+  attachments,
 }) => {
   const iconSize = isContactList ? "0.1rem" : "small";
 
@@ -60,20 +61,22 @@ export const Message = ({
           borderRadius: isUser ? "20px 20px 0 20px" : "20px 20px 20px 0",
         }}
       >
-        {isContactList ? (
-          <Typography
-            variant="body1"
-            fontSize={15}
-            sx={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {text.length > 100 ? `${text.substring(0, 100)}...` : text}
-          </Typography>
-        ) : (
-          <Typography variant="body1">{text}</Typography>
+        <Typography variant="body1">{text}</Typography>
+        {attachments && attachments.length > 0 && (
+          <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 1 }}>
+            {attachments.map((attachment, index) =>
+              attachment.type === "image" && attachment.url ? (
+                <Box key={index}>
+                  <Box
+                    component="img"
+                    src={attachment.url}
+                    alt={`attachment-preview-${index}`}
+                    sx={{ maxWidth: "200px", borderRadius: 1 }}
+                  />
+                </Box>
+              ) : null
+            )}
+          </Box>
         )}
       </Paper>
 
@@ -87,7 +90,6 @@ export const Message = ({
           gap: 0.5,
         }}
       >
-        {/* Error Message */}
         {error && (
           <Typography
             variant="caption"
@@ -97,15 +99,7 @@ export const Message = ({
             {error}
           </Typography>
         )}
-
-        {/* Timestamp and Status */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            gap: 0.5,
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           {!isContactList && (
             <Typography variant="caption" color="textSecondary">
               {new Date(timestamp).toLocaleTimeString([], {
@@ -117,13 +111,7 @@ export const Message = ({
           {!isContactList ? (
             getStatusIcon()
           ) : (
-            <Box
-              sx={{
-                position: "absolute",
-                top: "0.4rem",
-                right: "-1.2rem",
-              }}
-            >
+            <Box sx={{ position: "absolute", top: "0.4rem", right: "-1.2rem" }}>
               {getStatusIcon()}
             </Box>
           )}
@@ -141,8 +129,12 @@ Message.propTypes = {
     .isRequired,
   timestamp: PropTypes.instanceOf(Date).isRequired,
   error: PropTypes.string,
+  attachments: PropTypes.array,
 };
 
 Message.defaultProps = {
   error: null,
+  attachment: null,
 };
+
+export default Message;

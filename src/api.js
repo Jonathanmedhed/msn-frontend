@@ -68,7 +68,7 @@ export const logoutUser = async () => {
 export const changePassword = async ({ currentPassword, newPassword }) => {
   const token = localStorage.getItem("token");
   if (!token) {
-    throw new Error(t(""));
+    throw new Error("User not authorized");
   }
 
   const response = await api.post(
@@ -176,6 +176,7 @@ export const uploadPictures = async (userId, files) => {
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
     );
+    console.log("UploadPictures API response:", response.data);
     return response.data;
   } catch (error) {
     return handleFileUploadError(error);
@@ -283,11 +284,17 @@ export const createChat = async (participantIds) => {
   }
 };
 
-export const sendMessage = async (chatId, senderId, content) => {
+export const sendMessage = async (
+  chatId,
+  senderId,
+  content,
+  attachments = []
+) => {
   try {
     const response = await api.post(`/chats/${chatId}/send`, {
       senderId,
       content,
+      attachments,
     });
     return response.data;
   } catch (error) {

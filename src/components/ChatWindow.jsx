@@ -9,7 +9,12 @@ import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import SendIcon from "@mui/icons-material/Send";
 import EmojiPicker from "emoji-picker-react";
 import { io } from "socket.io-client";
-import { sendMessage, fetchChatMessages, createChat } from "../api";
+import {
+  sendMessage,
+  fetchChatMessages,
+  createChat,
+  uploadPictures,
+} from "../api";
 import { isValidObjectId } from "../utils/validation";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
@@ -25,36 +30,38 @@ export const ChatWindow = memo(
     onRemoveContact,
   }) => {
     const { t } = useTranslation();
-
     const [message, setMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [anchorEl, setAnchorEl] = useState(null);
     const [messages, setMessages] = useState([]);
     const [isSending, setIsSending] = useState(false);
+    // New state for previewing attached images
+    const [previewImages, setPreviewImages] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
 
     const socketRef = useRef(null);
     const messagesEndRef = useRef(null);
     const currentUserId = localStorage.getItem("userId");
 
     if (!currentUserId) {
-      throw new Error("User not authenticated");
+      throw new Error(t("userNotAuthenticated"));
     }
+
     // Scroll to bottom when messages change
     const scrollToBottom = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
-
     useEffect(scrollToBottom, [messages]);
 
     // Fetch initial messages and setup socket
     useEffect(() => {
       let isMounted = true;
-
       const initializeChat = async () => {
         if (!selectedContact?.chatId) return;
-
         try {
           const messagesData = await fetchChatMessages(selectedContact.chatId);
+          console.log("messagesData");
+          console.log(messagesData);
           if (isMounted) {
             setMessages(messagesData);
           }
@@ -62,16 +69,13 @@ export const ChatWindow = memo(
             withCredentials: true,
             transports: ["websocket"],
           });
-
           const socket = socketRef.current;
           socket.emit("joinChat", { chatId: selectedContact.chatId });
-
           socket.on("newMessage", (newMessage) => {
             if (isMounted) {
               setMessages((prev) => [...prev, newMessage]);
             }
           });
-
           socket.on("messageStatus", (updatedMessage) => {
             if (isMounted) {
               setMessages((prev) =>
@@ -88,18 +92,14 @@ export const ChatWindow = memo(
           }
         }
       };
-
       initializeChat();
-
       return () => {
         isMounted = false;
-        if (socketRef.current) {
-          socketRef.current.disconnect();
-        }
+        if (socketRef.current) socketRef.current.disconnect();
       };
     }, [selectedContact?.chatId]);
 
-    // Handle file attachments
+    // File attachment (non-image) remains unchanged
     const handleFileAttach = (event) => {
       const file = event.target.files[0];
       if (file) {
@@ -108,55 +108,58 @@ export const ChatWindow = memo(
       }
     };
 
-    // Handle image attachments
-    const handleImageAttach = (event) => {
-      const image = event.target.files[0];
-      if (image) {
-        console.log("Image attached:", image.name);
-        // TODO: Implement image upload logic
+    // New function to handle image selection
+    const handleImageSelect = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const previewUrl = URL.createObjectURL(file);
+        const tempId = `preview-${Date.now()}`;
+        const previewMessage = {
+          _id: tempId,
+          content: "",
+          sender: currentUserId,
+          status: "pending",
+          createdAt: new Date(),
+          attachment: { type: "image", url: previewUrl, file },
+        };
+        console.log("Preview message created:", previewMessage); // Debug log
+        setMessages((prev) => [...prev, previewMessage]);
+        setPreviewImages((prev) => [...prev, { file, previewUrl, tempId }]);
       }
+      event.target.value = "";
+      event.target.blur();
+    };
+    // Remove a preview message (and its file) if user cancels attachment.
+    const handleRemovePreviewImage = (tempId) => {
+      setPreviewImages((prev) => prev.filter((p) => p.tempId !== tempId));
+      setMessages((prev) => prev.filter((msg) => msg._id !== tempId));
     };
 
-    // Handle emoji selection
-    const handleEmojiClick = (emoji) => {
-      setMessage((prev) => prev + emoji.emoji);
-      setShowEmojiPicker(false);
-    };
-
-    // Handle message sending
-    const handleSendMessage = async () => {
-      const trimmedMessage = message.trim();
-      if (!trimmedMessage || isSending) return;
-
-      setIsSending(true);
-      let chatId = selectedContact.chatId;
-      const tempMessageId = Date.now().toString();
-
+    // When sending a message, if there are preview images, upload them first.
+    // Function to upload preview images and send them as attachments.
+    const handleSendImageAttachments = async () => {
+      if (previewImages.length === 0) return;
+      setIsUploading(true);
       try {
-        // Validate current user ID
-        const currentUserId = localStorage.getItem("userId");
-        if (!currentUserId) {
-          throw new Error(t("userNotAuthenticated"));
+        // Extract file objects from previewImages.
+        const filesArray = previewImages.map((imgObj) => imgObj.file);
+        // Call your API function to upload images.
+        const uploadResponse = await uploadPictures(currentUserId, filesArray);
+        console.log("Upload response:", uploadResponse);
+        // Assume the API returns an object with a 'pictureUrls' array.
+        const pictureUrls = uploadResponse.pictureUrls || [];
+        if (pictureUrls.length === 0) {
+          console.error("No picture URLs returned from uploadPictures API");
+          throw new Error("Image upload failed.");
         }
+        // Build the attachments array (one object per image).
+        const attachments = pictureUrls.map((url) => ({
+          type: "image",
+          url,
+        }));
 
-        // Validate contact ID
-        if (!selectedContact?._id) {
-          throw new Error(t("invalidContactSelected"));
-        }
-
-        // Optimistic update
-        setMessages((prev) => [
-          ...prev,
-          {
-            _id: tempMessageId,
-            content: trimmedMessage,
-            sender: currentUserId,
-            status: "pending",
-            createdAt: new Date(),
-          },
-        ]);
-
-        // Create chat if needed
+        // Ensure a chat exists.
+        let chatId = selectedContact.chatId;
         if (!chatId) {
           const participantIds = [currentUserId, selectedContact._id];
           if (
@@ -167,18 +170,82 @@ export const ChatWindow = memo(
           }
           const newChat = await createChat(participantIds);
           chatId = newChat._id;
-          // Instead of mutating, update the parent state:
           onUpdateContact({ ...selectedContact, chatId });
+          console.log("Created new chat with id:", chatId);
         }
 
-        // Send via API
+        // Send a new message with the attachments.
+        // You can decide if you want to send a caption (in 'content') or just the attachments.
+        const sentMessageResponse = await sendMessage(
+          chatId,
+          currentUserId,
+          "", // No text content in this case
+          attachments // Pass attachments as an array
+        );
+        console.log("Sent message with attachments:", sentMessageResponse);
+
+        // Update the messages state with the newly created message.
+        setMessages((prev) => [...prev, sentMessageResponse.message]);
+        // Clear preview images since they've been sent.
+        setPreviewImages([]);
+      } catch (error) {
+        console.error("Error sending image attachments:", error.message);
+        // Optionally show an error message to the user.
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
+    // When the send button is clicked, if there are preview images, send them; otherwise, send a text message.
+    const handleSendMessage = async () => {
+      // If there are image previews, upload them and send as attachments.
+      if (previewImages.length > 0) {
+        await handleSendImageAttachments();
+        return;
+      }
+      // Otherwise, send a text message.
+      const trimmedMessage = message.trim();
+      if (!trimmedMessage || isSending) return;
+      setIsSending(true);
+      let chatId = selectedContact.chatId;
+      const tempMessageId = Date.now().toString();
+      try {
+        const currentUserId = localStorage.getItem("userId");
+        if (!currentUserId) {
+          throw new Error(t("userNotAuthenticated"));
+        }
+        if (!selectedContact?._id) {
+          throw new Error(t("invalidContactSelected"));
+        }
+        // Optimistic update for text message.
+        setMessages((prev) => [
+          ...prev,
+          {
+            _id: tempMessageId,
+            content: trimmedMessage,
+            sender: currentUserId,
+            status: "pending",
+            createdAt: new Date(),
+          },
+        ]);
+        if (!chatId) {
+          const participantIds = [currentUserId, selectedContact._id];
+          if (
+            participantIds.length !== 2 ||
+            !participantIds.every((id) => isValidObjectId(id))
+          ) {
+            throw new Error(t("invalidParticipantIDsForChatCreation"));
+          }
+          const newChat = await createChat(participantIds);
+          chatId = newChat._id;
+          onUpdateContact({ ...selectedContact, chatId });
+        }
         const sentMessage = await sendMessage(
           chatId,
           currentUserId,
           trimmedMessage
         );
-
-        // Replace temporary message
+        console.log("Sent message API response:", sentMessage);
         setMessages((prev) =>
           prev.map((msg) =>
             msg._id === tempMessageId
@@ -186,18 +253,13 @@ export const ChatWindow = memo(
               : msg
           )
         );
-
         setMessage("");
       } catch (error) {
         console.error("Message send error:", error);
         setMessages((prev) =>
           prev.map((msg) =>
             msg._id === tempMessageId
-              ? {
-                  ...msg,
-                  status: "failed",
-                  error: error.message,
-                }
+              ? { ...msg, status: "failed", error: error.message }
               : msg
           )
         );
@@ -206,7 +268,6 @@ export const ChatWindow = memo(
       }
     };
 
-    // Handle Enter key for sending
     const handleKeyPress = (event) => {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
@@ -214,16 +275,20 @@ export const ChatWindow = memo(
       }
     };
 
+    // Handle emoji selection
+    const handleEmojiClick = (emoji) => {
+      setMessage((prev) => prev + emoji.emoji);
+      setShowEmojiPicker(false);
+    };
+
     useEffect(() => {
       if (!selectedContact.chatId && chats && chats.length > 0) {
-        // Find the chat corresponding to the selected contact
         const chatForContact = chats.find((chat) =>
           chat.participants.some(
             (p) => p._id.toString() === selectedContact._id.toString()
           )
         );
         if (chatForContact) {
-          // Update the selected contact with the chat ID
           onUpdateContact({ ...selectedContact, chatId: chatForContact._id });
         }
       }
@@ -290,11 +355,8 @@ export const ChatWindow = memo(
           }}
         >
           {(messages || []).map((msg) => {
-            // If msg.sender is an object with _id, use that.
-            // Otherwise, fall back to using msg.sender directly (e.g., it might be a string).
             const senderId =
               (typeof msg.sender === "object" && msg.sender?._id) || msg.sender;
-
             return (
               <Message
                 key={msg._id}
@@ -312,6 +374,7 @@ export const ChatWindow = memo(
                     ? msg?.sender.pictures[0]
                     : "https://via.placeholder.com/150"
                 }
+                attachments={msg.attachments} // Pass attachment info to your Message component
               />
             );
           })}
@@ -332,7 +395,7 @@ export const ChatWindow = memo(
         >
           {/* Attachment Buttons */}
           <Box sx={{ display: "flex", gap: 0.5 }}>
-            <IconButton component="label" disabled={isSending}>
+            <IconButton component="label" disabled={isSending || isUploading}>
               <input
                 type="file"
                 hidden
@@ -341,11 +404,11 @@ export const ChatWindow = memo(
               />
               <AttachFileIcon />
             </IconButton>
-            <IconButton component="label" disabled={isSending}>
+            <IconButton component="label" disabled={isSending || isUploading}>
               <input
                 type="file"
                 hidden
-                onChange={handleImageAttach}
+                onChange={handleImageSelect} // Use the new handleImageSelect for image preview
                 accept="image/*"
               />
               <ImageIcon />
@@ -371,16 +434,16 @@ export const ChatWindow = memo(
             disabled={isSending}
             sx={{
               flexGrow: 1,
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 4,
-              },
+              "& .MuiOutlinedInput-root": { borderRadius: 4 },
             }}
           />
 
           {/* Send Button */}
           <IconButton
             onClick={handleSendMessage}
-            disabled={!message.trim() || isSending}
+            disabled={
+              (!message.trim() && previewImages.length === 0) || isSending
+            }
             sx={{
               p: 1.5,
               backgroundColor: "primary.main",
@@ -395,12 +458,7 @@ export const ChatWindow = memo(
           {/* Emoji Picker */}
           {showEmojiPicker && (
             <Box
-              sx={{
-                position: "absolute",
-                bottom: 70,
-                right: 16,
-                zIndex: 999,
-              }}
+              sx={{ position: "absolute", bottom: 70, right: 16, zIndex: 999 }}
             >
               <EmojiPicker
                 onEmojiClick={handleEmojiClick}
@@ -432,3 +490,5 @@ ChatWindow.propTypes = {
 };
 
 ChatWindow.displayName = "ChatWindow";
+
+export default ChatWindow;
