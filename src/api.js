@@ -165,7 +165,6 @@ export const uploadProfilePicture = async (userId, file) => {
   }
 };
 
-// Upload multiple pictures (e.g., additional pictures)
 export const uploadPictures = async (userId, files) => {
   try {
     const formData = new FormData();
@@ -177,6 +176,21 @@ export const uploadPictures = async (userId, files) => {
       { headers: { "Content-Type": "multipart/form-data" } }
     );
     console.log("UploadPictures API response:", response.data);
+    return response.data;
+  } catch (error) {
+    return handleFileUploadError(error);
+  }
+};
+
+export const uploadFiles = async (userId, files) => {
+  try {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+
+    const response = await api.post(`/users/${userId}/upload-files`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    console.log("UploadFiles API response:", response.data);
     return response.data;
   } catch (error) {
     return handleFileUploadError(error);

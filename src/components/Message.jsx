@@ -3,6 +3,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import PropTypes from "prop-types";
 
 export const Message = ({
@@ -14,7 +15,7 @@ export const Message = ({
   error,
   isContactList,
   attachments,
-  onRemovePreview, // Function to remove preview message
+  onRemovePreview, // Callback to remove preview
 }) => {
   const iconSize = isContactList ? "0.1rem" : "small";
 
@@ -55,7 +56,6 @@ export const Message = ({
         maxWidth: isContactList ? "75%" : "85%",
       }}
     >
-      {/* Message Bubble */}
       <Paper
         sx={{
           p: isContactList ? "3px 9px 3px 7px" : "9px 13px 9px 13px",
@@ -68,38 +68,76 @@ export const Message = ({
       >
         <Typography variant="body1">{text}</Typography>
         {attachments &&
-          attachments.map((att, index) =>
-            att.type === "image" && att.url ? (
-              <Box key={index} sx={{ mt: 1, position: "relative" }}>
+          attachments.length > 0 &&
+          attachments.map((att, index) => {
+            if (att.type === "image" && att.url) {
+              return (
+                <Box key={index} sx={{ mt: 1, position: "relative" }}>
+                  <Box
+                    component="img"
+                    src={att.url}
+                    alt="attachment preview"
+                    sx={{ maxWidth: "200px", borderRadius: 1 }}
+                  />
+                  {onRemovePreview && messageId.startsWith("preview-") && (
+                    <IconButton
+                      onClick={() => onRemovePreview(messageId)}
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        bgcolor: "rgba(0,0,0,0.5)",
+                        color: "white",
+                        "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Box>
+              );
+            } else if (att.type === "file") {
+              return (
                 <Box
-                  component="img"
-                  src={att.url}
-                  alt="attachment preview"
-                  sx={{ maxWidth: "200px", borderRadius: 1 }}
-                />
-                {/* If this is a preview message, show a delete icon */}
-                {onRemovePreview && messageId.startsWith("preview-") && (
-                  <IconButton
-                    onClick={() => onRemovePreview(messageId)}
-                    size="small"
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      bgcolor: "rgba(0,0,0,0.5)",
-                      color: "white",
-                      "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                )}
-              </Box>
-            ) : null
-          )}
+                  key={index}
+                  sx={{
+                    mt: 1,
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    p: 1,
+                    border: "1px solid #ccc",
+                    borderRadius: 1,
+                    backgroundColor: "#f5f5f5",
+                    color: "black",
+                  }}
+                >
+                  <InsertDriveFileIcon />
+                  <Typography variant="body2">{att.name}</Typography>
+                  {onRemovePreview && messageId.startsWith("preview-") && (
+                    <IconButton
+                      onClick={() => onRemovePreview(messageId)}
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        right: 0,
+                        bgcolor: "rgba(0,0,0,0.5)",
+                        color: "white",
+                        "&:hover": { bgcolor: "rgba(0,0,0,0.7)" },
+                      }}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Box>
+              );
+            }
+            return null;
+          })}
       </Paper>
-
-      {/* Meta Information */}
       <Box
         sx={{
           mt: 0.5,
@@ -153,10 +191,11 @@ Message.propTypes = {
     PropTypes.shape({
       type: PropTypes.string,
       url: PropTypes.string,
+      name: PropTypes.string,
       file: PropTypes.any,
     })
   ),
-  onRemovePreview: PropTypes.func, // Optional callback
+  onRemovePreview: PropTypes.func,
 };
 
 Message.defaultProps = {
