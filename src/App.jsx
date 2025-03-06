@@ -8,6 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "../i18n";
+import "./css/emoji-picker-custom.css";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);

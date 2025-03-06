@@ -499,16 +499,20 @@ export const ChatWindow = memo(
           </IconButton>
 
           {/* Emoji Picker */}
-          {showEmojiPicker && (
-            <Box
-              sx={{ position: "absolute", bottom: 70, right: 16, zIndex: 999 }}
-            >
-              <EmojiPicker
-                onEmojiClick={handleEmojiClick}
-                previewConfig={{ showPreview: false }}
-              />
-            </Box>
-          )}
+          <Box
+            sx={{
+              display: showEmojiPicker ? "unset" : "none",
+              position: "absolute",
+              bottom: 70,
+              right: 16,
+              zIndex: 999,
+            }}
+          >
+            <EmojiPicker
+              onEmojiClick={handleEmojiClick}
+              previewConfig={{ showPreview: false }}
+            />
+          </Box>
         </Box>
       </Box>
     );

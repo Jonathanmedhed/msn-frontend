@@ -394,7 +394,7 @@ export const MainPage = () => {
             handleMenuOpen={handleMenuOpen}
             handleEditDialogOpen={handleEditDialogOpen}
             isMobile={isMobile}
-            isLoggedInUser={isAuthenticated}
+            isLoggedInUser={isAuthenticated && !selectedContact}
             onStatusChange={handleStatusChange}
             onBlockContact={handleBlockContact}
             blockedContacts={userProfile.blockedContacts}

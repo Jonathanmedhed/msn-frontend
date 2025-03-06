@@ -26,7 +26,7 @@ export const UserCard = memo(
     alwaysShowPersonalMessage = false,
     largeStatus = false,
     avatarSizeMultiplier = 1,
-    isLoggedInUser = false,
+    isLoggedInUser,
     onStatusChange,
     chat,
     isContactList,
