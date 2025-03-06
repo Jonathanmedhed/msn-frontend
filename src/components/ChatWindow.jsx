@@ -8,7 +8,7 @@ import ImageIcon from "@mui/icons-material/Image";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import SendIcon from "@mui/icons-material/Send";
 import EmojiPicker from "emoji-picker-react";
-import { io } from "socket.io-client";
+import { socket } from "../socket";
 import {
   sendMessage,
   fetchChatMessages,
@@ -40,7 +40,6 @@ export const ChatWindow = memo(
     const [previewFiles, setPreviewFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
 
-    const socketRef = useRef(null);
     const messagesEndRef = useRef(null);
     const currentUserId = localStorage.getItem("userId");
 
@@ -60,26 +59,36 @@ export const ChatWindow = memo(
       const initializeChat = async () => {
         if (!selectedContact?.chatId) return;
         try {
+          // Fetch messages
           const messagesData = await fetchChatMessages(selectedContact.chatId);
           if (isMounted) setMessages(messagesData);
-          socketRef.current = io("http://localhost:5000", {
-            withCredentials: true,
-            transports: ["websocket"],
-          });
-          const socket = socketRef.current;
-          socket.emit("joinChat", { chatId: selectedContact.chatId });
-          socket.on("newMessage", (newMessage) => {
+
+          // Use the existing socket
+          const socketInstance = socket;
+          socketInstance.emit("joinChat", { chatId: selectedContact.chatId });
+
+          // Define handlers
+          const handleNewMessage = (newMessage) => {
             if (isMounted) setMessages((prev) => [...prev, newMessage]);
-          });
-          socket.on("messageStatus", (updatedMessage) => {
-            if (isMounted) {
+          };
+          const handleMessageStatus = (updatedMessage) => {
+            if (isMounted)
               setMessages((prev) =>
                 prev.map((msg) =>
                   msg._id === updatedMessage._id ? updatedMessage : msg
                 )
               );
-            }
-          });
+          };
+
+          // Add listeners
+          socketInstance.on("newMessage", handleNewMessage);
+          socketInstance.on("messageStatus", handleMessageStatus);
+
+          // Cleanup listeners on unmount or chatId change
+          return () => {
+            socketInstance.off("newMessage", handleNewMessage);
+            socketInstance.off("messageStatus", handleMessageStatus);
+          };
         } catch (error) {
           if (isMounted) {
             console.error("Chat initialization error:", error);
@@ -87,10 +96,12 @@ export const ChatWindow = memo(
           }
         }
       };
+
       initializeChat();
+
       return () => {
         isMounted = false;
-        if (socketRef.current) socketRef.current.disconnect();
+        // No need to disconnect the global socket
       };
     }, [selectedContact?.chatId]);
 
