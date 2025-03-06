@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Box, TextField, IconButton, Menu, MenuItem } from "@mui/material";
 import PropTypes from "prop-types";
 import { UserCard } from "./UserCard";
@@ -40,6 +40,15 @@ export const ChatWindow = memo(
     const [previewFiles, setPreviewFiles] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
 
+    const uniqueMessages = useMemo(() => {
+      const seen = new Set();
+      return (messages || []).filter((msg) => {
+        const duplicate = seen.has(msg._id);
+        seen.add(msg._id);
+        return !duplicate;
+      });
+    }, [messages]);
+
     const messagesEndRef = useRef(null);
     const currentUserId = localStorage.getItem("userId");
 
@@ -69,7 +78,23 @@ export const ChatWindow = memo(
 
           // Define handlers
           const handleNewMessage = (newMessage) => {
-            if (isMounted) setMessages((prev) => [...prev, newMessage]);
+            if (isMounted) {
+              setMessages((prev) => {
+                // Check for duplicates using both ID and content hash
+                const duplicateId = prev.some(
+                  (msg) => msg._id === newMessage._id
+                );
+                const duplicateContent = prev.some(
+                  (msg) =>
+                    msg.contentHash === newMessage.contentHash &&
+                    msg.sender === newMessage.sender._id
+                );
+
+                return duplicateId || duplicateContent
+                  ? prev
+                  : [...prev, newMessage];
+              });
+            }
           };
           const handleMessageStatus = (updatedMessage) => {
             if (isMounted)
@@ -291,7 +316,6 @@ export const ChatWindow = memo(
           currentUserId,
           trimmedMessage
         );
-        console.log("Sent message API response:", sentMessage);
         setMessages((prev) =>
           prev.map((msg) =>
             msg._id === tempMessageId
@@ -399,7 +423,7 @@ export const ChatWindow = memo(
             gap: 2,
           }}
         >
-          {(messages || []).map((msg) => {
+          {(uniqueMessages || []).map((msg) => {
             const senderId =
               (typeof msg.sender === "object" && msg.sender?._id) || msg.sender;
             return (
