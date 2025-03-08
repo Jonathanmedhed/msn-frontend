@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useContext } from "react";
 import { Box, TextField, IconButton, Menu, MenuItem } from "@mui/material";
 import PropTypes from "prop-types";
 import { UserCard } from "./UserCard";
@@ -19,6 +19,7 @@ import {
 import { isValidObjectId } from "../utils/validation";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { SocketContext } from "../context/SocketContext";
 
 export const ChatWindow = memo(
   ({
@@ -30,6 +31,8 @@ export const ChatWindow = memo(
     blockedContacts,
     onRemoveContact,
   }) => {
+    const { socket, joinChatRoom } = useContext(SocketContext);
+
     const { t } = useTranslation();
     const [message, setMessage] = useState("");
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -62,73 +65,59 @@ export const ChatWindow = memo(
     };
     useEffect(scrollToBottom, [messages]);
 
-    // Fetch initial messages and setup socket connection
     useEffect(() => {
       let isMounted = true;
       const initializeChat = async () => {
         if (!selectedContact?.chatId) return;
         try {
-          // Fetch messages
           const messagesData = await fetchChatMessages(selectedContact.chatId);
-          if (isMounted) setMessages(messagesData);
-
-          // Use the existing socket
-          const socketInstance = socket;
-          socketInstance.emit("joinChat", { chatId: selectedContact.chatId });
-
-          // Define handlers
-          const handleNewMessage = (newMessage) => {
-            if (isMounted) {
-              setMessages((prev) => {
-                // Check for duplicates using both ID and content hash
-                const duplicateId = prev.some(
-                  (msg) => msg._id === newMessage._id
-                );
-                const duplicateContent = prev.some(
-                  (msg) =>
-                    msg.contentHash === newMessage.contentHash &&
-                    msg.sender === newMessage.sender._id
-                );
-
-                return duplicateId || duplicateContent
-                  ? prev
-                  : [...prev, newMessage];
-              });
-            }
-          };
-          const handleMessageStatus = (updatedMessage) => {
-            if (isMounted)
-              setMessages((prev) =>
-                prev.map((msg) =>
-                  msg._id === updatedMessage._id ? updatedMessage : msg
-                )
-              );
-          };
-
-          // Add listeners
-          socketInstance.on("newMessage", handleNewMessage);
-          socketInstance.on("messageStatus", handleMessageStatus);
-
-          // Cleanup listeners on unmount or chatId change
-          return () => {
-            socketInstance.off("newMessage", handleNewMessage);
-            socketInstance.off("messageStatus", handleMessageStatus);
-          };
-        } catch (error) {
+          console.log("Initial messages fetched:", messagesData);
           if (isMounted) {
-            console.error("Chat initialization error:", error);
-            setMessages([]);
+            setMessages(messagesData);
           }
+        } catch (error) {
+          console.error("Chat initialization error:", error);
+          if (isMounted) setMessages([]);
         }
       };
-
       initializeChat();
-
       return () => {
         isMounted = false;
-        // No need to disconnect the global socket
       };
     }, [selectedContact?.chatId]);
+
+    // Join chat room using the global socket
+    useEffect(() => {
+      if (selectedContact?.chatId && socket) {
+        joinChatRoom(selectedContact.chatId);
+      }
+    }, [selectedContact, socket, joinChatRoom]);
+
+    // Listen for new messages on the global socket.
+    useEffect(() => {
+      if (!socket) return;
+      const handleNewMessage = (newMessage) => {
+        console.log("ChatWindow received newMessage:", newMessage);
+        setMessages((prev) => [...prev, newMessage]);
+      };
+      const handleMessageStatus = (updatedMessage) => {
+        console.log(
+          "ChatWindow received messageStatus update:",
+          updatedMessage
+        );
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg._id === updatedMessage._id ? updatedMessage : msg
+          )
+        );
+      };
+      socket.on("newMessage", handleNewMessage);
+      socket.on("messageStatus", handleMessageStatus);
+      return () => {
+        socket.off("newMessage", handleNewMessage);
+        socket.off("messageStatus", handleMessageStatus);
+      };
+    }, [socket]);
 
     // ---------------------------
     // Image Attachment Handling

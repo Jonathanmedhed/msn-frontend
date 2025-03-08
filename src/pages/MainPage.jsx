@@ -1,6 +1,13 @@
 // src/pages/MainPage.jsx
 import PropTypes from "prop-types";
-import { useState, useRef, useMemo, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+  useContext,
+  useEffect,
+} from "react";
 import {
   Box,
   CssBaseline,
@@ -34,15 +41,18 @@ import LoginRegister from "./LoginRegisterPage";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 import FriendRequestStatusDialog from "../components/FriendRequestStatusDialog";
+import { SocketContext } from "../context/SocketContext";
 
 export const MainPage = () => {
   const { t } = useTranslation();
+
+  const { socket } = useContext(SocketContext);
 
   // Use our custom hook to fetch user data
   const {
     userProfile,
     contactList,
-    chatList,
+    chatList: initialChatList,
     loading,
     login,
     logout,
@@ -53,7 +63,7 @@ export const MainPage = () => {
     requestsReceived,
   } = useAuth();
 
-  // State variables
+  const [chatList, setChatList] = useState(initialChatList);
   const [anchorEl, setAnchorEl] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [newCustomMessage, setNewCustomMessage] = useState("");
@@ -68,6 +78,71 @@ export const MainPage = () => {
     message: "",
   });
   const [isUploading, setIsUploading] = useState(false);
+
+  // Global socket listener: join every chat room in the chatList.
+  // This will ensure that the socket receives newMessage events for every chat.
+  useEffect(() => {
+    if (!socket) return;
+    console.log("Joining all chat rooms...");
+    chatList.forEach((chat) => {
+      socket.emit("joinChat", { chatId: chat._id });
+      console.log(`Joined chat room: ${chat._id}`);
+    });
+  }, [socket, chatList]);
+
+  // Global socket listener to update chats when new messages are received (for all chats)
+  useEffect(() => {
+    if (!socket) return;
+    console.log("Setting up global socket listener in MainPage");
+    const handleNewMessage = (newMessage) => {
+      console.log("MainPage received new message:", newMessage);
+      setChatList((prevChats) =>
+        prevChats.map((chat) => {
+          if (chat._id === newMessage.chat) {
+            console.log(
+              `Updating chat ${chat._id} with new lastMessage:`,
+              newMessage
+            );
+            return { ...chat, lastMessage: newMessage };
+          }
+          return chat;
+        })
+      );
+    };
+
+    const handleMessageStatus = (updatedMessage) => {
+      console.log("MainPage received message status update:", updatedMessage);
+      setChatList((prevChats) =>
+        prevChats.map((chat) => {
+          if (chat._id === updatedMessage.chat) {
+            // Optionally update the lastMessage status if it matches
+            if (
+              chat.lastMessage &&
+              chat.lastMessage._id === updatedMessage._id
+            ) {
+              return { ...chat, lastMessage: updatedMessage };
+            }
+          }
+          return chat;
+        })
+      );
+    };
+
+    socket.on("newMessage", handleNewMessage);
+    socket.on("messageStatus", handleMessageStatus);
+
+    return () => {
+      console.log("Cleaning up global socket listener in MainPage");
+      socket.off("newMessage", handleNewMessage);
+      socket.off("messageStatus", handleMessageStatus);
+    };
+  }, [socket]);
+
+  // Ensure that when the initial chatList changes (for example, on login or refetch),
+  // we update our local chatList state.
+  useEffect(() => {
+    setChatList(initialChatList);
+  }, [initialChatList]);
 
   // Refs for file inputs (profile picture & multiple pictures)
   const picturesInputRef = useRef(null);

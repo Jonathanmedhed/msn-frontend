@@ -11,7 +11,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     const newSocket = io("http://localhost:5000", {
       withCredentials: true,
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
     });
     setSocket(newSocket);
 
@@ -19,18 +19,18 @@ export const SocketProvider = ({ children }) => {
       console.log("Global socket connected:", newSocket.id);
     });
 
-    // Log when a chat room is joined
-    newSocket.on("joinChat", (data) => {
-      console.log("joinChat event received in global socket:", data);
+    // Global listener for any new message events.
+    newSocket.on("newMessage", (data) => {
+      console.log("Global socket received newMessage:", data);
     });
 
     return () => newSocket.disconnect();
   }, []);
 
-  // Function to join a chat room
+  // Function to join a chat room.
   const joinChatRoom = (chatId) => {
     if (socket && chatId) {
-      console.log("Emitting joinChat for chatId:", chatId);
+      console.log("Global socket: Emitting joinChat for chatId:", chatId);
       socket.emit("joinChat", { chatId });
     }
   };

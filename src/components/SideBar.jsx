@@ -79,29 +79,36 @@ export const Sidebar = memo(
           />
         </Box>
         <List sx={{ flexGrow: 1, overflowY: "auto" }}>
-          {filteredContacts.map((contact, index) => {
-            // Find the chat for this contact (if any)
-            const chatForContact = chatList.find((chat) =>
+          {chatList.map((chat) => {
+            // Find the contact for this chat
+            const currentUserId = localStorage.getItem("userId");
+            const contactForChat = filteredContacts.find((contact) =>
               chat.participants.some(
-                (p) => p._id.toString() === contact._id.toString()
+                (p) =>
+                  (p._id ? p._id.toString() : p.toString()) ===
+                    contact._id.toString() &&
+                  contact._id.toString() !== currentUserId
               )
             );
+            console.log(chat);
+            if (!contactForChat) return null; // Skip chats without matching contacts
+
             return (
               <ListItem
                 button
-                key={index}
-                onClick={() => handleContactSelect(contact)}
+                key={chat._id}
+                onClick={() => handleContactSelect(contactForChat)}
                 sx={{
                   backgroundColor:
-                    selectedContact?.name === contact.name
+                    selectedContact?._id === contactForChat._id
                       ? "action.selected"
                       : "inherit",
                 }}
               >
                 <UserCard
-                  user={contact}
+                  user={contactForChat}
                   size="md"
-                  chat={chatForContact}
+                  chat={chat}
                   isContactList={isContactList}
                   blockedContacts={blockedContacts}
                   title="SideBar Card"

@@ -9,6 +9,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "./components/ErrorBoundary";
 import "../i18n";
 import "./css/emoji-picker-custom.css";
+import { SocketProvider } from "./context/SocketContext";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -32,7 +33,9 @@ function App() {
           <CssBaseline /> {/* Apply baseline styles for dark mode */}
           <QueryClientProvider client={queryClient}>
             <AuthProvider>
-              <MainPage />
+              <SocketProvider>
+                <MainPage />
+              </SocketProvider>
             </AuthProvider>
           </QueryClientProvider>
         </ThemeProvider>
