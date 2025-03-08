@@ -1,4 +1,3 @@
-// src/pages/MainPage.jsx
 import PropTypes from "prop-types";
 import {
   useState,
@@ -42,6 +41,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 import FriendRequestStatusDialog from "../components/FriendRequestStatusDialog";
 import { SocketContext } from "../context/SocketContext";
+import { LocalNotifications } from "@capacitor/local-notifications";
 
 export const MainPage = () => {
   const { t } = useTranslation();
@@ -108,6 +108,22 @@ export const MainPage = () => {
           return chat;
         })
       );
+      // Show a notification if the message is from someone else.
+      const currentUserId = localStorage.getItem("userId");
+      if (newMessage.sender && newMessage.sender._id !== currentUserId) {
+        // If the message has attachments, use "Attachment" as snippet.
+        let snippet = newMessage.content;
+        if (newMessage.attachments && newMessage.attachments.length > 0) {
+          snippet = "Attachment";
+        } else if (snippet && snippet.length > 20) {
+          snippet = `${snippet.substring(0, 20)}...`;
+        }
+        triggerNotification(
+          newMessage.sender.name,
+          snippet,
+          newMessage.sender.profilePicture
+        );
+      }
     };
 
     const handleMessageStatus = (updatedMessage) => {
@@ -143,6 +159,45 @@ export const MainPage = () => {
   useEffect(() => {
     setChatList(initialChatList);
   }, [initialChatList]);
+
+  // Function to trigger a notification using Capacitor LocalNotifications
+  const triggerNotification = async (senderName, snippet, senderAvatar) => {
+    try {
+      const permission = await LocalNotifications.requestPermissions();
+      if (permission.display === "granted") {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: Date.now(),
+              title: `Message received from ${senderName}`,
+              body: snippet,
+              schedule: { at: new Date(Date.now() + 1000) },
+              // Optionally add an icon or attachment if supported
+              sound: null,
+              attachments: senderAvatar ? [{ url: senderAvatar }] : [],
+              actionTypeId: "",
+              extra: {},
+            },
+          ],
+        });
+      } else {
+        // Fallback using the Web Notification API
+        if ("Notification" in window) {
+          if (Notification.permission !== "granted") {
+            await Notification.requestPermission();
+          }
+          if (Notification.permission === "granted") {
+            new Notification(`Message received from ${senderName}`, {
+              body: snippet,
+              icon: senderAvatar || "default_icon.png",
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to schedule notification:", error);
+    }
+  };
 
   // Refs for file inputs (profile picture & multiple pictures)
   const picturesInputRef = useRef(null);
