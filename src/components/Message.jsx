@@ -2,6 +2,7 @@ import { Box, Typography, Paper, IconButton } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import AccessTimeIcon from "@mui/icons-material/AccessTime"; // Clock icon for pending
 import DeleteIcon from "@mui/icons-material/Delete";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import PropTypes from "prop-types";
@@ -15,12 +16,14 @@ export const Message = ({
   error,
   isContactList,
   attachments,
-  onRemovePreview, // Callback to remove preview
+  onRemovePreview, // Callback to remove preview message
 }) => {
   const iconSize = isContactList ? "0.1rem" : "small";
 
   const getStatusIcon = () => {
     switch (status) {
+      case "pending":
+        return <AccessTimeIcon fontSize={iconSize} color="action" />;
       case "sent":
         return <CheckCircleOutlineIcon fontSize={iconSize} color="disabled" />;
       case "delivered":
@@ -56,6 +59,7 @@ export const Message = ({
         maxWidth: isContactList ? "75%" : "85%",
       }}
     >
+      {/* Message Bubble */}
       <Paper
         sx={{
           p: isContactList ? "3px 9px 3px 7px" : "9px 13px 9px 13px",
@@ -138,6 +142,8 @@ export const Message = ({
             return null;
           })}
       </Paper>
+
+      {/* Meta Information */}
       <Box
         sx={{
           mt: 0.5,

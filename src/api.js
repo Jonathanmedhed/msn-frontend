@@ -334,4 +334,13 @@ export const fetchUserChats = async (userId) => {
   }
 };
 
+export const updateMessageStatus = async (messageId, status) => {
+  try {
+    const response = await api.patch(`/chats/${messageId}/status`, { status });
+    return response.data;
+  } catch (error) {
+    return handleFileUploadError(error);
+  }
+};
+
 export default api;

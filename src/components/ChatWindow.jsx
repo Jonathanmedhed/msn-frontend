@@ -8,13 +8,13 @@ import ImageIcon from "@mui/icons-material/Image";
 import EmojiEmotionsIcon from "@mui/icons-material/EmojiEmotions";
 import SendIcon from "@mui/icons-material/Send";
 import EmojiPicker from "emoji-picker-react";
-import { socket } from "../socket";
 import {
   sendMessage,
   fetchChatMessages,
   createChat,
   uploadPictures,
   uploadFiles,
+  updateMessageStatus,
 } from "../api";
 import { isValidObjectId } from "../utils/validation";
 import { memo } from "react";
@@ -93,13 +93,26 @@ export const ChatWindow = memo(
       }
     }, [selectedContact, socket, joinChatRoom]);
 
-    // Listen for new messages on the global socket.
+    // Listen for new messages and message status updates on the global socket.
     useEffect(() => {
       if (!socket) return;
       const handleNewMessage = (newMessage) => {
         console.log("ChatWindow received newMessage:", newMessage);
+        // If message is from another user and status is not "read", update it.
+        if (
+          newMessage.sender &&
+          newMessage.sender._id !== currentUserId &&
+          newMessage.status !== "read"
+        ) {
+          console.log(
+            "Updating message status to read for message:",
+            newMessage._id
+          );
+          updateMessageStatus(newMessage._id, "read");
+        }
         setMessages((prev) => [...prev, newMessage]);
       };
+
       const handleMessageStatus = (updatedMessage) => {
         console.log(
           "ChatWindow received messageStatus update:",
@@ -111,13 +124,38 @@ export const ChatWindow = memo(
           )
         );
       };
+
       socket.on("newMessage", handleNewMessage);
       socket.on("messageStatus", handleMessageStatus);
+
       return () => {
         socket.off("newMessage", handleNewMessage);
         socket.off("messageStatus", handleMessageStatus);
       };
-    }, [socket]);
+    }, [socket, currentUserId]);
+
+    // Mark received messages as "read" when ChatWindow is open.
+    useEffect(() => {
+      if (socket && selectedContact?.chatId) {
+        const unreadMessages = messages.filter((msg) => {
+          const senderId =
+            typeof msg.sender === "object" ? msg.sender._id : msg.sender;
+          return (
+            senderId !== currentUserId &&
+            (msg.status === "sent" || msg.status === "delivered")
+          );
+        });
+        if (unreadMessages.length > 0) {
+          console.log("Marking messages as read:", unreadMessages);
+          unreadMessages.forEach((msg) => {
+            socket.emit("updateMessageStatus", {
+              messageId: msg._id,
+              status: "read",
+            });
+          });
+        }
+      }
+    }, [socket, selectedContact?.chatId, messages, currentUserId]);
 
     // ---------------------------
     // Image Attachment Handling
