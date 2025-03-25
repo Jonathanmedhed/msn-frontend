@@ -148,6 +148,17 @@ export const updateUserProfile = async (userId, data) => {
   }
 };
 
+export const updateUserStatus = async (userId, newStatus) => {
+  try {
+    const response = await api.put(`/users/${userId}/status`, {
+      status: newStatus,
+    });
+    return response.data;
+  } catch (error) {
+    return Promise.reject(error);
+  }
+};
+
 // Upload a single profile picture
 export const uploadProfilePicture = async (userId, file) => {
   try {

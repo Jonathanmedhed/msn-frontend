@@ -42,6 +42,8 @@ i18n
           invalidEmailFormat: "Email format invalid",
           invalidParticipantIDsForChatCreation:
             "Invalid participant IDs for chat creation",
+          isNowOnline: "is now online",
+          isOffline: "is offline",
           login: "Login",
           logout: "Logout",
           messages: "Messages",
@@ -112,6 +114,8 @@ i18n
           invalidEmailFormat: "Formato de correo electrónico no válido",
           invalidParticipantIDsForChatCreation:
             "ID de participantes no válidos para la creación de chat",
+          isNowOnline: "está en línea",
+          isOffline: "se ha desconectado",
           login: "Ingresar",
           logout: "Cerrar sesión",
           messages: "Mensajes",

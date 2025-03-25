@@ -7,6 +7,7 @@ import {
   useContext,
   useEffect,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   CssBaseline,
@@ -35,6 +36,7 @@ import {
   acceptFriendRequest,
   rejectFriendRequest,
   cancelFriendRequest,
+  updateUserStatus,
 } from "../api";
 import LoginRegister from "./LoginRegisterPage";
 import { useAuth } from "../context/AuthContext";
@@ -47,6 +49,8 @@ export const MainPage = () => {
   const { t } = useTranslation();
 
   const { socket } = useContext(SocketContext);
+
+  const queryClient = useQueryClient();
 
   // Use our custom hook to fetch user data
   const {
@@ -79,6 +83,11 @@ export const MainPage = () => {
   });
   const [isUploading, setIsUploading] = useState(false);
 
+  // Sync with auth data changes
+  useEffect(() => {
+    setChatList(initialChatList);
+  }, [initialChatList]);
+
   // Global socket listener: join every chat room in the chatList.
   // This will ensure that the socket receives newMessage events for every chat.
   useEffect(() => {
@@ -93,9 +102,7 @@ export const MainPage = () => {
   // Global socket listener to update chats when new messages are received (for all chats)
   useEffect(() => {
     if (!socket) return;
-    console.log("Setting up global socket listener in MainPage");
     const handleNewMessage = (newMessage) => {
-      console.log("MainPage received new message:", newMessage);
       setChatList((prevChats) =>
         prevChats.map((chat) => {
           if (chat._id === newMessage.chat) {
@@ -144,13 +151,65 @@ export const MainPage = () => {
       );
     };
 
+    // Listen for user status changes (to update contacts in sidebar, etc.)
+    const handleUserStatusChange = (data) => {
+      console.log("[Socket] userStatusChange event received:", data);
+
+      const currentUserId = localStorage.getItem("userId");
+      // Don't notify for self-status changes
+      if (data.userId === currentUserId) return;
+
+      // Get current data before update
+      const currentData = queryClient.getQueryData(["userData"]);
+      const oldContact = currentData?.contactList?.find(
+        (c) => c._id === data.userId
+      );
+
+      // Only notify if contact exists and status changed meaningfully
+      if (oldContact && oldContact.status !== data.status) {
+        if (data.status === "online") {
+          triggerStatusNotification(oldContact.name, "connected");
+        } else if (data.status === "offline") {
+          triggerStatusNotification(oldContact.name, "disconnected");
+        }
+      }
+
+      // Update query cache
+      queryClient.setQueryData(["userData"], (oldData) => {
+        if (!oldData) return oldData;
+
+        const updatedContacts = oldData.contactList.map((contact) =>
+          contact._id === data.userId
+            ? { ...contact, status: data.status }
+            : contact
+        );
+
+        const updatedChats = oldData.chatList.map((chat) => ({
+          ...chat,
+          participants: chat.participants.map((p) =>
+            p._id === data.userId ? { ...p, status: data.status } : p
+          ),
+        }));
+
+        return {
+          ...oldData,
+          contactList: updatedContacts,
+          chatList: updatedChats,
+        };
+      });
+    };
+
+    socket.on("userStatusChange", handleUserStatusChange);
+
     socket.on("newMessage", handleNewMessage);
     socket.on("messageStatus", handleMessageStatus);
+    socket.on("userStatusChange", handleUserStatusChange);
 
     return () => {
       console.log("Cleaning up global socket listener in MainPage");
       socket.off("newMessage", handleNewMessage);
       socket.off("messageStatus", handleMessageStatus);
+      socket.off("userStatusChange", handleUserStatusChange);
     };
   }, [socket]);
 
@@ -196,6 +255,40 @@ export const MainPage = () => {
       }
     } catch (error) {
       console.error("Failed to schedule notification:", error);
+    }
+  };
+
+  const triggerStatusNotification = async (contactName, statusType) => {
+    const title =
+      statusType === "connected"
+        ? `${contactName} ${t("isNowOnline")}`
+        : `${contactName} ${t("isOffline")}`;
+
+    try {
+      const permission = await LocalNotifications.requestPermissions();
+      if (permission.display === "granted") {
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: Date.now(),
+              title: title,
+              schedule: { at: new Date(Date.now() + 1000) },
+              sound: null,
+              actionTypeId: "",
+              extra: {},
+            },
+          ],
+        });
+      } else if ("Notification" in window) {
+        if (Notification.permission !== "granted") {
+          await Notification.requestPermission();
+        }
+        if (Notification.permission === "granted") {
+          new Notification(title);
+        }
+      }
+    } catch (error) {
+      console.error("Status notification error:", error);
     }
   };
 
@@ -266,8 +359,13 @@ export const MainPage = () => {
   const handleStatusChange = useCallback(
     async (status) => {
       try {
-        await updateUserProfile(userProfile._id, { status });
+        // Use the dedicated status endpoint
+        await updateUserStatus(userProfile._id, status);
+
+        // Optional: Only refetch if needed for other components
         refetch();
+
+        // Socket will handle real-time updates through the 'userStatusChange' event
       } catch (error) {
         console.error("Error updating status:", error.message);
       }
