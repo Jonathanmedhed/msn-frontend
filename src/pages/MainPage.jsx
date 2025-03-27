@@ -99,6 +99,14 @@ export const MainPage = () => {
     });
   }, [socket, chatList]);
 
+  useEffect(() => {
+    if (socket && userProfile?._id) {
+      // Join user's presence channel
+      socket.emit("joinUser", userProfile._id);
+      console.log("Joined user channel:", userProfile._id);
+    }
+  }, [socket, userProfile?._id]);
+
   // Global socket listener to update chats when new messages are received (for all chats)
   useEffect(() => {
     if (!socket) return;
@@ -199,14 +207,86 @@ export const MainPage = () => {
       });
     };
 
-    socket.on("userStatusChange", handleUserStatusChange);
+    const handleFriendRequestAccepted = (data) => {
+      console.log("[Socket] friendRequestAccepted:", data);
 
+      queryClient.setQueryData(["userData"], (oldData) => {
+        if (!oldData) return oldData;
+
+        // Add new contact
+        const updatedContacts = [...oldData.contactList];
+        if (!updatedContacts.some((c) => c._id === data.newContact._id)) {
+          updatedContacts.push(data.newContact);
+        }
+
+        // Remove from requests
+        const updatedReceived = oldData.requestsReceived.filter(
+          (r) => r._id !== data.removedRequestId
+        );
+
+        return {
+          ...oldData,
+          contactList: updatedContacts,
+          requestsReceived: updatedReceived,
+        };
+      });
+    };
+
+    const handleFriendRequestUpdate = (data) => {
+      queryClient.invalidateQueries(["userData"]); // Force refresh of all user data
+      if (data.type === "accepted" && data.newChat) {
+        queryClient.setQueryData(["chats"], (old) => [...old, data.newChat]);
+      }
+    };
+
+    const handleNewFriendRequest = (data) => {
+      console.log("[Socket] newFriendRequest:", data);
+
+      queryClient.setQueryData(["userData"], (oldData) => {
+        if (!oldData) return oldData;
+
+        // For received requests
+        if (data.type === "received") {
+          const exists = oldData.requestsReceived.some(
+            (r) => r._id === data.request._id
+          );
+
+          if (!exists) {
+            return {
+              ...oldData,
+              requestsReceived: [...oldData.requestsReceived, data.request],
+            };
+          }
+        }
+
+        // For sent requests (store just IDs)
+        if (data.type === "sent") {
+          const exists = oldData.requestsSent.includes(data.request);
+          if (!exists) {
+            return {
+              ...oldData,
+              requestsSent: [...oldData.requestsSent, data.request],
+            };
+          }
+        }
+
+        return oldData;
+      });
+    };
+
+    socket.on("userStatusChange", handleUserStatusChange);
+    socket.on("friendRequestAccepted", handleFriendRequestAccepted);
+    socket.on("friendRequestUpdate", handleFriendRequestUpdate);
+    socket.on("newFriendRequest", handleNewFriendRequest);
     socket.on("newMessage", handleNewMessage);
     socket.on("messageStatus", handleMessageStatus);
     socket.on("userStatusChange", handleUserStatusChange);
 
     return () => {
       console.log("Cleaning up global socket listener in MainPage");
+      socket.off("friendRequestAccepted", handleFriendRequestAccepted);
+      socket.off("friendRequestUpdate", handleFriendRequestUpdate);
+      socket.off("newFriendRequest", handleNewFriendRequest);
       socket.off("newMessage", handleNewMessage);
       socket.off("messageStatus", handleMessageStatus);
       socket.off("userStatusChange", handleUserStatusChange);
@@ -500,11 +580,18 @@ export const MainPage = () => {
         // Assume sendFriendRequest returns a promise that rejects
         // if the email is not found in the database.
         await sendFriendRequest(userProfile._id, email);
+
+        queryClient.setQueryData(["userData"], (oldData) => ({
+          ...oldData,
+          requestsSent: [...oldData.requestsSent, email],
+        }));
+
         setFriendRequestDialog({
           open: true,
           status: "success",
           message: t("requestSent"),
         });
+
         refetch();
       } catch (error) {
         setFriendRequestDialog({
@@ -514,7 +601,7 @@ export const MainPage = () => {
         });
       }
     },
-    [userProfile?._id, refetch, t]
+    [userProfile?._id, refetch, t, queryClient]
   );
 
   const handleAddUser = useCallback(
@@ -531,9 +618,20 @@ export const MainPage = () => {
   const handleAcceptRequest = async (user) => {
     try {
       await acceptFriendRequest(user._id);
-      refetch();
+
+      // Optimistic update
+      queryClient.setQueryData(["userData"], (oldData) => ({
+        ...oldData,
+        requestsReceived: oldData.requestsReceived.filter(
+          (r) => r._id !== user._id
+        ),
+      }));
+
+      // Socket will handle the rest via the 'friendRequestAccepted' event
     } catch (error) {
       console.error("Error accepting friend request:", error.message);
+      // Rollback on error
+      queryClient.invalidateQueries(["userData"]);
     }
   };
 
