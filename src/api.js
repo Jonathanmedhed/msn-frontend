@@ -264,9 +264,9 @@ export const sendFriendRequest = async (senderId, recipientEmail) => {
   }
 };
 
-export const acceptFriendRequest = async (senderId) => {
+export const respondToFriendRequest = async (action, senderId) => {
   try {
-    const response = await api.post("/users/friend-request/accept", {
+    const response = await api.post(`/users/friend-requests/${action}`, {
       senderId,
     });
     return response.data;

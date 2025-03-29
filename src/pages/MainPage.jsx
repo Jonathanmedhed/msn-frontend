@@ -33,10 +33,10 @@ import {
   blockContact,
   removeContact,
   sendFriendRequest,
-  acceptFriendRequest,
   rejectFriendRequest,
   cancelFriendRequest,
   updateUserStatus,
+  respondToFriendRequest,
 } from "../api";
 import LoginRegister from "./LoginRegisterPage";
 import { useAuth } from "../context/AuthContext";
@@ -82,6 +82,10 @@ export const MainPage = () => {
     message: "",
   });
   const [isUploading, setIsUploading] = useState(false);
+
+  /**
+   *  USE EFFECTS USE EFFECTS USE EFFECTS USE EFFECTS USE EFFECTS
+   */
 
   // Sync with auth data changes
   useEffect(() => {
@@ -214,13 +218,16 @@ export const MainPage = () => {
         if (!oldData) return oldData;
 
         // Add new contact
-        const updatedContacts = [...oldData.contactList];
-        if (!updatedContacts.some((c) => c._id === data.newContact._id)) {
-          updatedContacts.push(data.newContact);
-        }
+        const updatedContacts = [
+          ...oldData.contactList,
+          ...(data.newContact ? [data.newContact] : []),
+        ].filter((v, i, a) => a.findIndex((t) => t._id === v._id) === i);
 
-        // Remove from requests
+        // Remove from both sent and received requests
         const updatedReceived = oldData.requestsReceived.filter(
+          (r) => r._id !== data.removedRequestId
+        );
+        const updatedSent = oldData.requestsSent.filter(
           (r) => r._id !== data.removedRequestId
         );
 
@@ -228,15 +235,40 @@ export const MainPage = () => {
           ...oldData,
           contactList: updatedContacts,
           requestsReceived: updatedReceived,
+          requestsSent: updatedSent,
         };
       });
     };
 
     const handleFriendRequestUpdate = (data) => {
-      queryClient.invalidateQueries(["userData"]); // Force refresh of all user data
-      if (data.type === "accepted" && data.newChat) {
-        queryClient.setQueryData(["chats"], (old) => [...old, data.newChat]);
-      }
+      queryClient.setQueryData(["userData"], (old) => {
+        const newData = { ...old };
+
+        // Remove request from correct array based on perspective
+        if (data.currentUserId === old.userProfile._id) {
+          // Current user initiated the action
+          newData.requestsReceived = old.requestsReceived.filter(
+            (r) => r.sender._id !== data.removedRequestId
+          );
+        } else {
+          // Current user was the target
+          newData.requestsSent = old.requestsSent.filter(
+            (r) => r.recipient._id !== data.removedRequestId
+          );
+        }
+
+        // Add contact if needed
+        if (data.action === "accept" && data.addedContact) {
+          const exists = old.contactList.some(
+            (c) => c._id === data.addedContact._id
+          );
+          if (!exists) {
+            newData.contactList = [...old.contactList, data.addedContact];
+          }
+        }
+
+        return newData;
+      });
     };
 
     const handleNewFriendRequest = (data) => {
@@ -298,6 +330,10 @@ export const MainPage = () => {
   useEffect(() => {
     setChatList(initialChatList);
   }, [initialChatList]);
+
+  /**
+   *  USE EFFECTS END  USE EFFECTS END  USE EFFECTS END  USE EFFECTS END
+   */
 
   // Function to trigger a notification using Capacitor LocalNotifications
   const triggerNotification = async (senderName, snippet, senderAvatar) => {
@@ -615,23 +651,23 @@ export const MainPage = () => {
     [handleSendFriendRequest]
   );
 
+  // MainPage component
   const handleAcceptRequest = async (user) => {
     try {
-      await acceptFriendRequest(user._id);
-
       // Optimistic update
-      queryClient.setQueryData(["userData"], (oldData) => ({
-        ...oldData,
-        requestsReceived: oldData.requestsReceived.filter(
+      queryClient.setQueryData(["userData"], (old) => ({
+        ...old,
+        requestsReceived: old.requestsReceived.filter(
           (r) => r._id !== user._id
         ),
+        contactList: [...old.contactList, user],
       }));
 
-      // Socket will handle the rest via the 'friendRequestAccepted' event
+      await respondToFriendRequest("accept", user._id);
     } catch (error) {
-      console.error("Error accepting friend request:", error.message);
-      // Rollback on error
+      console.error("Accept error:", error);
       queryClient.invalidateQueries(["userData"]);
+      throw error;
     }
   };
 
