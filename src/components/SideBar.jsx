@@ -8,7 +8,9 @@ import {
   ListItem,
   ListSubheader,
   TextField,
+  Fab,
 } from "@mui/material";
+import { Add } from "@mui/icons-material";
 import { UserCard } from "./UserCard";
 import { Search as SearchIcon, Close as CloseIcon } from "@mui/icons-material";
 import { memo } from "react";
@@ -34,6 +36,7 @@ export const Sidebar = memo(
     onAcceptRequest,
     onRejectRequest,
     onCancelRequest,
+    onAddUser,
   }) => {
     const { t } = useTranslation();
     return (
@@ -79,6 +82,31 @@ export const Sidebar = memo(
           />
         </Box>
         <List sx={{ flexGrow: 1, overflowY: "auto" }}>
+          {!isMobile && (
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Fab
+                color="primary"
+                onClick={onAddUser}
+                sx={{
+                  transform: "scale(0.6)", // Shrinks to 50% size
+                  minHeight: "unset", // Prevents default sizing
+                  display: {
+                    xs: selectedContact ? "none" : "flex",
+                    md: "flex",
+                  },
+                }}
+              >
+                <Add sx={{ fontSize: 30 }} /> {/* Adjust icon size if needed */}
+              </Fab>
+            </Box>
+          )}
           {chatList.map((chat) => {
             // Find the contact for this chat
             const currentUserId = localStorage.getItem("userId");
@@ -199,6 +227,7 @@ Sidebar.propTypes = {
   onAcceptRequest: PropTypes.func,
   onRejectRequest: PropTypes.func,
   onCancelRequest: PropTypes.func,
+  onAddUser: PropTypes.func,
   filteredContacts: PropTypes.arrayOf(
     PropTypes.shape({
       _id: PropTypes.string.isRequired,
