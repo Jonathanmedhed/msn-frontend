@@ -12,6 +12,7 @@ export const SocketProvider = ({ children }) => {
     const newSocket = io("https://msn-backend.onrender.com", {
       withCredentials: true,
       transports: ["websocket", "polling"],
+      secure: true,
     });
     setSocket(newSocket);
 
