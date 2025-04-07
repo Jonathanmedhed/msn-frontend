@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-export const socket = io("http://localhost:5000", {
+export const socket = io("https://msn-backend.onrender.com", {
   withCredentials: true, // ✅ Important for CORS
   transports: ["websocket", "polling"], // ✅ Ensures compatibility
 });

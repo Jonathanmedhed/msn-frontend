@@ -23,7 +23,7 @@ import { AppBarComponent } from "../components/AppBarComponent";
 import { UserProfileBox } from "../components/UserProfileBox";
 import { EditPersonalMessageDialog } from "../components/EditPersonalMessageDialog";
 import { ChatWindow } from "../components/ChatWindow";
-import { Add, Chat, PhoneAndroid, DesktopWindows } from "@mui/icons-material";
+import { Add, Chat } from "@mui/icons-material";
 import { SearchUserDialog } from "../components/SearchUserDialog";
 import { AddUserDialog } from "../components/AddUserDialog";
 import { Sidebar } from "../components/SideBar";
@@ -83,14 +83,6 @@ export const MainPage = () => {
     message: "",
   });
   const [isUploading, setIsUploading] = useState(false);
-
-  const [forceMobileView, setForceMobileView] = useState(false);
-  const actualIsMobile = useMediaQuery("(max-width: 640px)");
-  const isMobileView = actualIsMobile || forceMobileView;
-
-  const toggleViewMode = () => {
-    setForceMobileView((prev) => !prev);
-  };
 
   /**
    *  USE EFFECTS USE EFFECTS USE EFFECTS USE EFFECTS USE EFFECTS
@@ -457,6 +449,9 @@ export const MainPage = () => {
   const picturesInputRef = useRef(null);
   const searchInputRef = useRef(null);
 
+  // Media query
+  const isMobile = useMediaQuery("(max-width: 640px)");
+
   // Determine if authenticated (using our custom hook's userProfile)
   const isAuthenticated = Boolean(userProfile);
 
@@ -600,7 +595,7 @@ export const MainPage = () => {
     [userProfile?._id, refetch]
   );
 
-  const showBackButton = isMobileView && selectedContact !== null;
+  const showBackButton = isMobile && selectedContact !== null;
   const handleBackClick = useCallback(() => setSelectedContact(null), []);
 
   // Memoize the search query itself
@@ -752,283 +747,230 @@ export const MainPage = () => {
     <Box
       sx={{
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
+        flexDirection: "column",
+        height: "100vh",
         width: "100vw",
-        bgcolor: "background.default",
-        p: forceMobileView ? 2 : 0,
       }}
     >
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: forceMobileView ? 480 : "unset", // Mobile device width
-          height: forceMobileView ? "90vh" : "100vh",
-          display: "flex",
-          flexDirection: "column",
-          borderRadius: forceMobileView ? 4 : 0,
-          boxShadow: 6,
-          overflow: "hidden",
-          position: "relative",
-          bgcolor: "background.paper",
-          // Only apply mobile styling when in forced mobile view
-          ...(forceMobileView && {
-            border: "12px solid #1a1a1a",
-            borderRadius: "24px",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: -6,
-              left: "50%",
-              transform: "translateX(-50%)",
-              width: 60,
-              height: 6,
-              bgcolor: "#333",
-              borderRadius: 3,
-              zIndex: 1,
-            },
-          }),
-        }}
-      >
-        <CssBaseline />
-        {!selectedContact && !actualIsMobile && (
-          <Fab
-            color="primary"
-            onClick={toggleViewMode}
-            sx={{
-              position: "fixed",
-              bottom: 16,
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 9999,
-              display: { xs: "none", md: "flex" },
-            }}
+      <CssBaseline />
+      {loading ? (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      ) : !isAuthenticated ? (
+        <LoginRegister login={login} register={register} />
+      ) : (
+        <>
+          <FriendRequestStatusDialog
+            open={friendRequestDialog.open}
+            status={friendRequestDialog.status}
+            message={friendRequestDialog.message}
+            onClose={closeFriendRequestDialog}
+          />
+          <AppBarComponent
+            isMobile={isMobile}
+            showBackButton={showBackButton}
+            onBackClick={handleBackClick}
+            toggleSidebar={toggleDrawer}
+            isLoggedIn={isAuthenticated}
+            blockedContacts={userProfile.blockedContacts}
+            onLoginClick={() => {}}
+            logout={logout}
+          />
+          <UserProfileBox
+            user={isMobile && selectedContact ? selectedContact : userProfile}
+            handleMenuOpen={handleMenuOpen}
+            handleEditDialogOpen={handleEditDialogOpen}
+            isMobile={isMobile}
+            isLoggedInUser={isAuthenticated && !selectedContact}
+            onStatusChange={handleStatusChange}
+            onBlockContact={handleBlockContact}
+            blockedContacts={userProfile.blockedContacts}
+            onRemoveContact={handleRemoveContact}
+          />
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
           >
-            {forceMobileView ? <PhoneAndroid /> : <DesktopWindows />}
-          </Fab>
-        )}
-        {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              height: "100vh",
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        ) : !isAuthenticated ? (
-          <LoginRegister login={login} register={register} />
-        ) : (
-          <>
-            <FriendRequestStatusDialog
-              open={friendRequestDialog.open}
-              status={friendRequestDialog.status}
-              message={friendRequestDialog.message}
-              onClose={closeFriendRequestDialog}
-            />
-            <AppBarComponent
-              isMobile={isMobileView}
-              showBackButton={showBackButton}
-              onBackClick={handleBackClick}
-              toggleSidebar={toggleDrawer}
-              isLoggedIn={isAuthenticated}
-              blockedContacts={userProfile.blockedContacts}
-              onLoginClick={() => {}}
-              logout={logout}
-            />
-            <UserProfileBox
-              user={
-                isMobileView && selectedContact ? selectedContact : userProfile
-              }
-              handleMenuOpen={handleMenuOpen}
-              handleEditDialogOpen={handleEditDialogOpen}
-              isMobile={isMobileView}
-              isLoggedInUser={isAuthenticated && !selectedContact}
-              onStatusChange={handleStatusChange}
-              onBlockContact={handleBlockContact}
-              blockedContacts={userProfile.blockedContacts}
-              onRemoveContact={handleRemoveContact}
-            />
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              {["online", "away", "busy", "offline"].map((status, i) => (
-                <MenuItem key={i} onClick={() => handleStatusChange(status)}>
-                  {i === 0
-                    ? t("online")
-                    : i === 1
-                    ? t("away")
-                    : i === 2
-                    ? t("busy")
-                    : t("offline")}
-                </MenuItem>
-              ))}
-            </Menu>
-            <Stack sx={{ height: "100vh" }} direction="row" spacing={2}>
-              {(isMobileView && !selectedContact) || !isMobileView ? (
-                <Sidebar
-                  isMobile={isMobileView}
-                  searchQuery={searchQuery}
-                  handleSearchChange={handleSearchChange}
-                  handleMagnifierClick={handleMagnifierClick}
-                  handleClearSearch={handleClearSearch}
-                  filteredContacts={filteredContacts}
-                  selectedContact={selectedContact}
-                  handleContactSelect={handleContactSelect}
-                  chatList={chatList}
-                  isContactList={true}
-                  blockedContacts={userProfile.blockedContacts}
-                  onBlockContact={handleBlockContact}
-                  onRemoveContact={handleRemoveContact}
-                  requestsReceived={requestsReceived}
-                  requestsSent={requestsSent}
-                  onAcceptRequest={handleAcceptRequest}
-                  onRejectRequest={handleRejectRequest}
-                  onCancelRequest={handleCancelRequest}
-                  onAddUser={handleAddUserDialogOpen}
-                />
-              ) : null}
-              {(isMobileView && selectedContact) || !isMobileView ? (
-                <Box
-                  sx={{
-                    flexGrow: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    width: "100%",
-                    overflow: "hidden",
-                  }}
-                >
-                  {selectedContact ? (
-                    <ChatWindow
-                      selectedContact={selectedContact}
-                      isMobile={isMobileView}
-                      onBlockContact={handleBlockContact}
-                      onUpdateContact={handleContactSelect}
-                      chats={chatList}
-                      blockedContacts={userProfile.blockedContacts}
-                      onRemoveContact={handleRemoveContact}
-                    />
-                  ) : (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        height: "100%",
-                        width: "100%",
-                      }}
-                    >
-                      <h2>
-                        {contactList?.lengh > 0
-                          ? t("selectAcontactToStartChatting")
-                          : t("addAcontactToStartChatting")}
-                      </h2>
-                    </Box>
-                  )}
-                </Box>
-              ) : null}
-            </Stack>
-
-            {!selectedContact && isMobileView && (
+            {["online", "away", "busy", "offline"].map((status, i) => (
+              <MenuItem key={i} onClick={() => handleStatusChange(status)}>
+                {i === 0
+                  ? t("online")
+                  : i === 1
+                  ? t("away")
+                  : i === 2
+                  ? t("busy")
+                  : t("offline")}
+              </MenuItem>
+            ))}
+          </Menu>
+          <Stack sx={{ height: "100vh" }} direction="row" spacing={2}>
+            {(isMobile && !selectedContact) || !isMobile ? (
+              <Sidebar
+                isMobile={isMobile}
+                searchQuery={searchQuery}
+                handleSearchChange={handleSearchChange}
+                handleMagnifierClick={handleMagnifierClick}
+                handleClearSearch={handleClearSearch}
+                filteredContacts={filteredContacts}
+                selectedContact={selectedContact}
+                handleContactSelect={handleContactSelect}
+                chatList={chatList}
+                isContactList={true}
+                blockedContacts={userProfile.blockedContacts}
+                onBlockContact={handleBlockContact}
+                onRemoveContact={handleRemoveContact}
+                requestsReceived={requestsReceived}
+                requestsSent={requestsSent}
+                onAcceptRequest={handleAcceptRequest}
+                onRejectRequest={handleRejectRequest}
+                onCancelRequest={handleCancelRequest}
+                onAddUser={handleAddUserDialogOpen}
+              />
+            ) : null}
+            {(isMobile && selectedContact) || !isMobile ? (
               <Box
                 sx={{
-                  position: "fixed",
-                  bottom: 16,
-                  right: 16,
+                  flexGrow: 1,
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "flex-end",
-                  gap: 2,
+                  width: "100%",
+                  overflow: "hidden",
                 }}
               >
-                <Fab
-                  color="primary"
-                  onClick={handleAddUserDialogOpen}
-                  sx={{
-                    display: {
-                      xs: selectedContact ? "none" : "flex",
-                      md: "flex",
-                    },
-                  }}
-                >
-                  <Add />
-                </Fab>
-                <Fab
-                  color="secondary"
-                  onClick={handleSearchUserDialogOpen}
-                  sx={{
-                    display: {
-                      xs: selectedContact ? "none" : "flex",
-                      md: "flex",
-                    },
-                  }}
-                >
-                  <Chat />
-                </Fab>
+                {selectedContact ? (
+                  <ChatWindow
+                    selectedContact={selectedContact}
+                    isMobile={isMobile}
+                    onBlockContact={handleBlockContact}
+                    onUpdateContact={handleContactSelect}
+                    chats={chatList}
+                    blockedContacts={userProfile.blockedContacts}
+                    onRemoveContact={handleRemoveContact}
+                  />
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100%",
+                      width: "100%",
+                    }}
+                  >
+                    <h2>
+                      {contactList?.lengh > 0
+                        ? t("selectAcontactToStartChatting")
+                        : t("addAcontactToStartChatting")}
+                    </h2>
+                  </Box>
+                )}
               </Box>
-            )}
-            <AddUserDialog
-              open={isAddUserDialogOpen}
-              onClose={handleAddUserDialogClose}
-              onAddUser={handleAddUser} // This now sends a friend request
-            />
-            <SearchUserDialog
-              open={isSearchUserDialogOpen}
-              onClose={handleSearchUserDialogClose}
-              contacts={contactList}
-              onSelectUser={handleSelectUserToChat}
-              blockedContacts={userProfile.blockedContacts}
-            />
-            <DrawerMenu
-              blockedContacts={userProfile.blockedContacts}
-              contacts={contactList}
-              isDrawerOpen={isDrawerOpen}
-              toggleDrawer={toggleDrawer}
-              isMobile={isMobileView}
-              userAvatar={
-                userProfile.pictures && userProfile.pictures.length > 0
-                  ? userProfile.pictures[0]
-                  : ""
-              }
-              userStatus={userProfile.status}
-              userCustomMessage={userProfile.customMessage}
-              userBio={userProfile.bio}
-              userImages={userProfile.pictures}
-              handleStatusChange={handleStatusChange}
-              handleEditCustomMessage={handleEditDialogOpen}
-              handleMenuItemClick={handleMenuItemClick}
-              handleFieldUpdate={handleFieldUpdate}
-              handlePicturesClick={handlePicturesClick}
-              isUploading={isUploading}
-              onBlockContact={handleBlockContact}
-              onRemoveContact={handleRemoveContact}
-            />
-            <EditPersonalMessageDialog
-              isEditDialogOpen={isEditDialogOpen}
-              handleEditDialogClose={handleEditDialogClose}
-              newPersonalMessage={newCustomMessage}
-              setNewPersonalMessage={setNewCustomMessage}
-              handleSavePersonalMessage={handleSavePersonalMessage}
-              handleDeletePersonalMessage={handleDeletePersonalMessage}
-            />
-          </>
-        )}
-        {/* Hidden file input */}
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          ref={picturesInputRef}
-          style={{ display: "none" }}
-          onChange={handlePicturesChange}
-        />
-      </Box>
+            ) : null}
+          </Stack>
+
+          {!selectedContact && isMobile && (
+            <Box
+              sx={{
+                position: "fixed",
+                bottom: 16,
+                right: 16,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                gap: 2,
+              }}
+            >
+              <Fab
+                color="primary"
+                onClick={handleAddUserDialogOpen}
+                sx={{
+                  display: {
+                    xs: selectedContact ? "none" : "flex",
+                    md: "flex",
+                  },
+                }}
+              >
+                <Add />
+              </Fab>
+              <Fab
+                color="secondary"
+                onClick={handleSearchUserDialogOpen}
+                sx={{
+                  display: {
+                    xs: selectedContact ? "none" : "flex",
+                    md: "flex",
+                  },
+                }}
+              >
+                <Chat />
+              </Fab>
+            </Box>
+          )}
+          <AddUserDialog
+            open={isAddUserDialogOpen}
+            onClose={handleAddUserDialogClose}
+            onAddUser={handleAddUser} // This now sends a friend request
+          />
+          <SearchUserDialog
+            open={isSearchUserDialogOpen}
+            onClose={handleSearchUserDialogClose}
+            contacts={contactList}
+            onSelectUser={handleSelectUserToChat}
+            blockedContacts={userProfile.blockedContacts}
+          />
+          <DrawerMenu
+            blockedContacts={userProfile.blockedContacts}
+            contacts={contactList}
+            isDrawerOpen={isDrawerOpen}
+            toggleDrawer={toggleDrawer}
+            isMobile={isMobile}
+            userAvatar={
+              userProfile.pictures && userProfile.pictures.length > 0
+                ? userProfile.pictures[0]
+                : ""
+            }
+            userStatus={userProfile.status}
+            userCustomMessage={userProfile.customMessage}
+            userBio={userProfile.bio}
+            userImages={userProfile.pictures}
+            handleStatusChange={handleStatusChange}
+            handleEditCustomMessage={handleEditDialogOpen}
+            handleMenuItemClick={handleMenuItemClick}
+            handleFieldUpdate={handleFieldUpdate}
+            handlePicturesClick={handlePicturesClick}
+            isUploading={isUploading}
+            onBlockContact={handleBlockContact}
+            onRemoveContact={handleRemoveContact}
+          />
+          <EditPersonalMessageDialog
+            isEditDialogOpen={isEditDialogOpen}
+            handleEditDialogClose={handleEditDialogClose}
+            newPersonalMessage={newCustomMessage}
+            setNewPersonalMessage={setNewCustomMessage}
+            handleSavePersonalMessage={handleSavePersonalMessage}
+            handleDeletePersonalMessage={handleDeletePersonalMessage}
+          />
+        </>
+      )}
+      {/* Hidden file input */}
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        ref={picturesInputRef}
+        style={{ display: "none" }}
+        onChange={handlePicturesChange}
+      />
     </Box>
   );
 };
